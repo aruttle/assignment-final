@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}SEA — Home{% endblock %}
+{% block content %}
+  <div class="row">
+    <div class="col-lg-8">
+      <h1 class="mb-3">Shannon Estuary Activities</h1>
+      <p class="lead">Bookings, buddy sessions, and safety info in one place.</p>
+      <a class="btn btn-primary me-2" href="#">Explore activities</a>
+      <a class="btn btn-outline-secondary" href="#">View map</a>
+      <hr class="my-4">
+      <h5>HTMX check</h5>
+      <button class="btn btn-outline-primary"
+              hx-get="{% url 'core:pulse' %}"
+              hx-target="#pulse"
+              hx-swap="innerHTML">Ping server</button>
+      <div id="pulse" class="mt-2 text-muted">Click “Ping server”to return partial.</div>
+    </div>
+  </div>
+
+  <div id="map" class="mb-3"></div>
+
+<!-- HTMX + Leaflet integration demo -->
+<div id="spot-data"
+     hx-get="{% url 'core:spots_geojson' %}"
+     hx-trigger="load"
+     hx-swap="none"></div>
+
+<script>
+  // Listen for the HTMX response and push spots into Leaflet
+  document.body.addEventListener('htmx:afterOnLoad', function (e) {
+    if (e.target.id === 'spot-data') {
+      try {
+        const data = JSON.parse(e.detail.xhr.responseText);
+        if (window.updateSpots) updateSpots(data);
+      } catch (err) { /* ignore */ }
+    }
+  });
+</script>
+{% endblock %}

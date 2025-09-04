@@ -1,0 +1,5 @@
+/* minimal readable defaults */
+h1, h2, h3, h4, h5 { letter-spacing: 0.2px; }
+.lead { max-width: 60ch; }
+
+#map { height: 420px; width: 100%; border-radius: 0.5rem; }
