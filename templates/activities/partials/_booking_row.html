@@ -1,0 +1,26 @@
+<tr id="booking-{{ b.id }}">
+  <td>{{ b.start_dt|date:"Y-m-d H:i" }}</td>
+  <td>{{ b.activity.title }}</td>
+  <td>{{ b.activity.provider.name }}</td>
+  <td>{{ b.party_size }}</td>
+  <td>
+    {% if b.status == "confirmed" %}
+      <span class="badge text-bg-success">Confirmed</span>
+    {% else %}
+      <span class="badge text-bg-secondary">Cancelled</span>
+    {% endif %}
+  </td>
+  <td class="text-end">
+    {% if b.status == "confirmed" %}
+      <form
+        hx-post="{% url 'activities:booking_cancel' b.id %}"
+        hx-target="#booking-{{ b.id }}"
+        hx-swap="outerHTML">
+        {% csrf_token %}
+        <button class="btn btn-sm btn-outline-danger">Cancel</button>
+      </form>
+    {% else %}
+      <button class="btn btn-sm btn-outline-secondary" disabled>Cancelled</button>
+    {% endif %}
+  </td>
+</tr>

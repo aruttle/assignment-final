@@ -3,8 +3,10 @@ from datetime import datetime, date, time as dtime
 
 from django.db.models import Q, Sum
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from dateutil import parser as dtparser
 
 from .models import Activity, Provider, Booking
@@ -100,10 +102,10 @@ def booking_create(request, pk: int):
     """Create a booking (HTMX). Returns booking panel partial or inline error."""
     activity = get_object_or_404(Activity, pk=pk)
 
-    # Require login (use admin login for now)
+    # Require login → use our nice login page now
     if not request.user.is_authenticated:
         resp = HttpResponse("")
-        resp["HX-Redirect"] = f"/admin/login/?next=/activities/{pk}/"
+        resp["HX-Redirect"] = f"/accounts/login/?next=/activities/{pk}/"
         return resp
 
     start_iso = request.POST.get("start_dt", "")
@@ -166,3 +168,36 @@ def booking_create(request, pk: int):
         "activities/partials/_booking_panel.html",
         {"activity": activity, "booking": booking},
     )
+
+
+# ---------------------------
+# My Bookings + Cancel
+# ---------------------------
+@login_required
+def my_bookings(request):
+    """List upcoming confirmed bookings for the current user."""
+    qs = (
+        Booking.objects
+        .filter(user=request.user, status="confirmed", start_dt__gte=timezone.now())
+        .select_related("activity", "activity__provider")
+        .order_by("start_dt")
+    )
+    return render(request, "activities/my_bookings.html", {"bookings": qs})
+
+
+@require_POST
+@login_required
+def booking_cancel(request, pk: int):
+    """Cancel a booking you own. HTMX returns updated row; fallback redirects."""
+    b = get_object_or_404(
+        Booking.objects.select_related("activity", "activity__provider"),
+        pk=pk, user=request.user
+    )
+    b.status = "cancelled"
+    b.save(update_fields=["status"])
+
+    if getattr(request, "htmx", False):
+        # Return just the updated row so the table swaps inline
+        return render(request, "activities/partials/_booking_row.html", {"b": b})
+
+    return redirect("my_bookings")

@@ -57,9 +57,9 @@ INSTALLED_APPS = [
 
     # Local apps
     "core",
-    "activities",   # will add in next steps
-    # "buddies",      # will add in next steps
-    # "safety",       # will add in next steps
+    "activities", 
+    "accounts",       
+    "safety",     
 ]
 
 # -----------------------------------------------------------------------------
@@ -67,14 +67,14 @@ INSTALLED_APPS = [
 # -----------------------------------------------------------------------------
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # serve static on Render
+    "whitenoise.middleware.WhiteNoiseMiddleware",  
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "django_htmx.middleware.HtmxMiddleware",       # adds request.htmx, etc.
+    "django_htmx.middleware.HtmxMiddleware",       
 ]
 
 ROOT_URLCONF = "config.urls"

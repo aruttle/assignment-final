@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Logged out — SEA{% endblock %}
+{% block content %}
+<div class="alert alert-info">You are now logged out.</div>
+<a class="btn btn-primary" href="{% url 'login' %}">Login</a>
+{% endblock %}
