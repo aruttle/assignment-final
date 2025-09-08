@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ activity.title }} — SEA{% endblock %}
+{% block content %}
+  <h1 class="mb-1">{{ activity.title }}</h1>
+  <div class="text-muted mb-3">{{ activity.provider.name }}</div>
+  <p class="mb-3">{{ activity.description }}</p>
+  <p class="mb-4">€{{ activity.price }} · {{ activity.duration_minutes }} minutes · Capacity {{ activity.capacity }}</p>
+
+  <!-- Availability & booking will be added next slice -->
+  <div class="alert alert-info">Availability picker coming next.</div>
+
+  <a class="btn btn-outline-secondary" href="{% url 'activities:list' %}">Back to list</a>
+{% endblock %}

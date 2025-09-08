@@ -1,0 +1,24 @@
+{% if slots %}
+  <div class="list-group">
+    {% for s in slots %}
+      <div class="list-group-item d-flex align-items-center justify-content-between">
+        <div>
+          <strong>{{ s.label }}</strong>
+          <span class="text-muted"> · {{ s.remaining }} left</span>
+        </div>
+        <form class="d-flex align-items-center gap-2"
+              hx-post="{% url 'activities:book' activity.id %}"
+              hx-target="#booking-panel"
+              hx-swap="outerHTML">
+          {% csrf_token %}
+          <input type="hidden" name="start_dt" value="{{ s.iso }}">
+          <input type="number" name="party_size" min="1" max="{{ s.remaining }}" value="1"
+                 class="form-control" style="width: 90px;">
+          <button class="btn btn-primary">Book {{ s.label }}</button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="alert alert-warning mb-0">No availability for this date.</div>
+{% endif %}

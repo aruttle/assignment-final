@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Activities — SEA{% endblock %}
+{% block content %}
+<h1 class="mb-3">Activities</h1>
+
+<form class="row gy-2 gx-2 align-items-end mb-3"
+      hx-get="{% url 'activities:list' %}"
+      hx-target="#activity-list"
+      hx-push-url="true">
+  <div class="col-auto">
+    <label class="form-label">Provider</label>
+    <select name="provider" class="form-select" onchange="this.form.requestSubmit()">
+    <option value="">All</option>
+    {% for p in providers %}
+        <option value="{{ p.id }}" {% if selected_provider == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+    {% endfor %}
+    </select>
+
+  </div>
+  <div class="col-auto">
+    <label class="form-label">Search</label>
+    <input type="text" class="form-control" name="q" value="{{ q }}"
+           placeholder="kayak, yoga..." oninput="this.form.requestSubmit()">
+  </div>
+  <div class="col-auto">
+    <a class="btn btn-outline-secondary mt-4" href="{% url 'activities:list' %}">Reset</a>
+  </div>
+</form>
+
+<div id="activity-list">
+  {% include "activities/partials/_list.html" %}
+</div>
+{% endblock %}

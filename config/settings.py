@@ -57,7 +57,7 @@ INSTALLED_APPS = [
 
     # Local apps
     "core",
-    # "activities",   # will add in next steps
+    "activities",   # will add in next steps
     # "buddies",      # will add in next steps
     # "safety",       # will add in next steps
 ]

@@ -13,7 +13,7 @@ function initMap() {
     return;
   }
 
-  // Center roughly on the Shannon Estuary
+  // Center roughly 
   map = L.map('map').setView([52.68, -9.00], 10);
 
   // Free OpenStreetMap tiles (with attribution)
@@ -23,9 +23,6 @@ function initMap() {
   }).addTo(map);
 
   markersLayer.addTo(map);
-
-  // Optional default point
-  // addSpot({ name: 'Bunratty Pier', lat: 52.699, lon: -8.814, type: 'kayak' });
 
   console.log('Map initialized.');
 }

@@ -1,0 +1,44 @@
+from django.db import models
+from django.conf import settings
+
+class Provider(models.Model):
+    name = models.CharField(max_length=120)
+    contact_email = models.EmailField(blank=True, default="")
+
+    def __str__(self):
+        return self.name
+
+class Activity(models.Model):
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name="activities")
+    title = models.CharField(max_length=160)
+    description = models.TextField(blank=True, default="")
+    price = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    duration_minutes = models.PositiveIntegerField(default=60)
+    capacity = models.PositiveIntegerField(default=8)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["title"]
+
+    def __str__(self):
+        return f"{self.title} — {self.provider.name}"
+
+STATUS_CHOICES = [
+    ("confirmed", "Confirmed"),
+    ("cancelled", "Cancelled"),
+]
+class Booking(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="bookings")
+    activity = models.ForeignKey(Activity, on_delete=models.CASCADE, related_name="bookings")
+    start_dt = models.DateTimeField()
+    party_size = models.PositiveIntegerField(default=1)
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default="confirmed")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["start_dt"]),
+        ]
+
+    def __str__(self):
+        return f"{self.activity.title} @ {self.start_dt:%Y-%m-%d %H:%M} ({self.party_size})"

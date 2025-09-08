@@ -7,11 +7,9 @@ def home(request):
     return render(request, "core/home.html")
 
 def pulse(request):
-    # HTMX partial to show roundtrip without full reload
     return HttpResponse("Working!")
 
 def spots_geojson(request):
-    # Minimal sample data (replace later with DB spots)
     data = [
         {"name": "Bunratty Pier", "lat": 52.699, "lon": -8.814, "type": "kayak"},
         {"name": "Kilrush Marina", "lat": 52.640, "lon": -9.483, "type": "kayak/Sailing/Tours "},

@@ -1,0 +1,16 @@
+{% if error %}
+  <div id="booking-panel">
+    <div class="alert alert-danger">{{ error }}</div>
+  </div>
+{% elif booking %}
+  <div id="booking-panel" class="card">
+    <div class="card-body">
+      <h5 class="card-title mb-2">Booking confirmed 🎉</h5>
+      <p class="mb-1"><strong>{{ booking.activity.title }}</strong></p>
+      <p class="mb-1">{{ booking.start_dt|date:"Y-m-d H:i" }} · Party size: {{ booking.party_size }}</p>
+      <a class="btn btn-outline-secondary mt-2" href="/admin/">View in admin</a>
+    </div>
+  </div>
+{% else %}
+  <div id="booking-panel"></div>
+{% endif %}
