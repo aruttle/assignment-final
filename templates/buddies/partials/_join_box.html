@@ -1,0 +1,21 @@
+<div class="d-flex align-items-center gap-3">
+  <div>Participants: <strong>{{ sess.count }}</strong> / {{ sess.capacity }} ({{ sess.spots_left }} left)</div>
+  {% if error %}
+    <div class="text-danger small">{{ error }}</div>
+  {% endif %}
+  {% if request.user.is_authenticated %}
+    <form hx-post="{% url 'buddies:toggle_join' sess.id %}"
+          hx-target="#join-box" hx-swap="outerHTML">
+      {% csrf_token %}
+      {% if joined %}
+        <button class="btn btn-outline-danger btn-sm">Leave</button>
+      {% else %}
+        <button class="btn btn-outline-primary btn-sm" {% if sess.spots_left <= 0 %}disabled{% endif %}>
+          Join
+        </button>
+      {% endif %}
+    </form>
+  {% else %}
+    <a class="btn btn-sm btn-primary" href="{% url 'login' %}?next={{ request.path }}">Login to join</a>
+  {% endif %}
+</div>

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}New buddy session — SEA{% endblock %}
+{% block content %}
+<h1 class="mb-3">Create a buddy session</h1>
+<form method="post" class="col-md-7">
+  {% csrf_token %}
+  <div class="mb-3"><label class="form-label">Title</label>{{ form.title }}</div>
+  <div class="mb-3"><label class="form-label">Type</label>{{ form.type }}</div>
+  <div class="mb-3"><label class="form-label">Start</label>{{ form.start_dt }}</div>
+  <div class="mb-3"><label class="form-label">Location name</label>{{ form.location_name }}</div>
+  <div class="row">
+    <div class="col-md-6 mb-3"><label class="form-label">Latitude</label>{{ form.lat }}</div>
+    <div class="col-md-6 mb-3"><label class="form-label">Longitude</label>{{ form.lon }}</div>
+  </div>
+  <div class="mb-3"><label class="form-label">Capacity</label>{{ form.capacity }}</div>
+  <button class="btn btn-primary">Create</button>
+  <a class="btn btn-outline-secondary" href="{% url 'buddies:list' %}">Cancel</a>
+</form>
+{% endblock %}

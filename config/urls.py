@@ -25,6 +25,7 @@ urlpatterns = [
     path("accounts/", include("accounts.urls", namespace="accounts")),     # login/signup
     path("accounts/", include("django.contrib.auth.urls")),                # logout, password reset, etc.
     path("safety/", include("safety.urls", namespace="safety")),
+    path("buddies/", include("buddies.urls", namespace="buddies")),
     path("me/bookings/", activities_views.my_bookings, name="my_bookings"),
 ]
 

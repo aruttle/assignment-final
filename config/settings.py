@@ -59,7 +59,8 @@ INSTALLED_APPS = [
     "core",
     "activities", 
     "accounts",       
-    "safety",     
+    "safety", 
+    "buddies",    
 ]
 
 # -----------------------------------------------------------------------------

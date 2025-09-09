@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ sess.title }} — Buddy session{% endblock %}
+{% block content %}
+<h1 class="mb-1">{{ sess.title }}</h1>
+<div class="text-muted mb-2">{{ sess.get_type_display }} · {{ sess.start_dt|date:"Y-m-d H:i" }}</div>
+<div class="mb-2">{{ sess.location_name }}</div>
+
+<div id="join-box" class="mb-3">
+  {% include "buddies/partials/_join_box.html" with sess=sess %}
+</div>
+
+<h5 class="mt-4">Messages</h5>
+<ul id="messages-list" class="list-group mb-3">
+  {% for msg in messages %}
+    {% include "buddies/partials/_message_item.html" with msg=msg %}
+  {% endfor %}
+</ul>
+
+<form class="d-flex gap-2"
+      hx-post="{% url 'buddies:message' sess.id %}"
+      hx-target="#messages-list"
+      hx-swap="beforeend">
+  {% csrf_token %}
+  <input name="body" class="form-control" placeholder="Write a message…" />
+  <button class="btn btn-primary">Send</button>
+</form>
+
+<a class="btn btn-outline-secondary mt-3" href="{% url 'buddies:list' %}">Back to list</a>
+{% endblock %}

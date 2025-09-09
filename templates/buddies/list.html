@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Buddy sessions — SEA{% endblock %}
+{% block content %}
+<h1 class="mb-3">Buddy sessions</h1>
+
+<div class="d-flex gap-2 mb-3">
+  <a class="btn btn-primary" href="{% url 'buddies:create' %}">Create session</a>
+</div>
+
+<form class="row gy-2 gx-2 align-items-end mb-3"
+      hx-get="{% url 'buddies:list' %}" hx-target="#sessions" hx-push-url="true">
+  <div class="col-auto">
+    <label class="form-label">Type</label>
+    <select name="type" class="form-select" onchange="this.form.requestSubmit()">
+      <option value="">All</option>
+      {% for val,label in type_choices %}
+        <option value="{{ val }}" {% if selected_type == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <label class="form-label">Search</label>
+    <input type="text" class="form-control" name="q" value="{{ q }}" placeholder="title or location"
+           oninput="this.form.requestSubmit()">
+  </div>
+</form>
+
+<div id="sessions">
+  {% include "buddies/partials/_list.html" %}
+</div>
+{% endblock %}
+
+

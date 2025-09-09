@@ -1,0 +1,9 @@
+{% if error %}
+  <li class="list-group-item text-danger">{{ error }}</li>
+{% elif msg %}
+  <li class="list-group-item">
+    <strong>{{ msg.user.get_full_name|default:msg.user.username }}</strong>
+    <span class="text-muted small">· {{ msg.created_at|date:"Y-m-d H:i" }}</span>
+    <div>{{ msg.body|linebreaksbr }}</div>
+  </li>
+{% endif %}
