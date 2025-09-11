@@ -16,6 +16,13 @@ class Activity(models.Model):
     duration_minutes = models.PositiveIntegerField(default=60)
     capacity = models.PositiveIntegerField(default=8)
     created_at = models.DateTimeField(auto_now_add=True)
+    spot = models.ForeignKey(
+        "core.Spot",
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="activities",
+        help_text="Where this activity happens."
+    )
 
     class Meta:
         ordering = ["title"]

@@ -1,20 +1,55 @@
+# core/views.py
 from django.shortcuts import render
-from django.http import JsonResponse
-from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import JsonResponse, HttpResponse
+
+from .models import Spot
+
+# Try to include Activities so a spot popup can list activities at that location.
+try:
+    from activities.models import Activity
+    HAS_ACTIVITIES = True
+except Exception:
+    HAS_ACTIVITIES = False
+
 
 def home(request):
+    """Home page with the map + HTMX loaders."""
     return render(request, "core/home.html")
 
+
 def pulse(request):
+    """Tiny HTMX round-trip check."""
     return HttpResponse("Working!")
 
+
 def spots_geojson(request):
-    data = [
-        {"name": "Bunratty Pier", "lat": 52.699, "lon": -8.814, "type": "kayak"},
-        {"name": "Kilrush Marina", "lat": 52.640, "lon": -9.483, "type": "kayak/Sailing/Tours "},
-        {"name": "Foynes Marina", "lat": 52.615, "lon": -9.114, "type": "kayak/Sailing" },
-        {"name": "Glin Pier", "lat": 52.5754, "lon": -9.2834, "type": "Swimming/kayak" },
-        {"name": "Kilteery Pier", "lat": 52.5947, "lon": -9.2237, "type": "Swimming/kayak" },
-    ]
+    """
+    Returns active spots as JSON for Leaflet.
+    If Activities app is present and linked via Activity.spot, also include
+    a list of activities per spot.
+    """
+    spots = list(Spot.objects.filter(is_active=True).order_by("name"))
+
+    by_spot = {}
+    if HAS_ACTIVITIES and spots:
+        acts = Activity.objects.filter(spot__in=spots).values("id", "title", "spot_id")
+        for a in acts:
+            by_spot.setdefault(a["spot_id"], []).append(
+                {"id": a["id"], "title": a["title"]}
+            )
+
+    data = []
+    for s in spots:
+        item = {
+            "id": s.id,
+            "name": s.name,
+            "lat": float(s.lat),  # Decimal → float for JSON
+            "lon": float(s.lon),
+            "type": s.type,
+        }
+        if HAS_ACTIVITIES:
+            item["activities"] = by_spot.get(s.id, [])
+        data.append(item)
+
     return JsonResponse(data, safe=False)
+

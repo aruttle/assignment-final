@@ -28,7 +28,7 @@ def safety_panel(request):
     if lat is None or lon is None:
         return HttpResponseBadRequest("Invalid coordinates")
 
-    # Open-Meteo (no key). We ask for current wind & gust + hourly precip prob.
+    # Open-Meteo 
     url = "https://api.open-meteo.com/v1/forecast"
     params = {
         "latitude": lat,
@@ -43,7 +43,7 @@ def safety_panel(request):
         r.raise_for_status()
         data = r.json()
     except Exception:
-        # Graceful fallback
+        # Fallback
         ctx = {
             "lat": lat, "lon": lon, "error": "Weather service unavailable. Try again soon."
         }

@@ -3,13 +3,14 @@ from .models import Provider, Activity, Booking
 
 @admin.register(Provider)
 class ProviderAdmin(admin.ModelAdmin):
+   
     list_display = ("name", "contact_email")
-    search_fields = ("name",)
+    search_fields = ("name", "contact_email")
 
 @admin.register(Activity)
 class ActivityAdmin(admin.ModelAdmin):
-    list_display = ("title", "provider", "price", "duration_minutes", "capacity")
-    list_filter = ("provider",)
+    list_display = ("title", "provider", "price", "capacity", "spot")
+    list_filter = ("provider", "spot")
     search_fields = ("title", "description")
 
 @admin.register(Booking)

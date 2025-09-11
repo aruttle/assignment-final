@@ -4,7 +4,7 @@ from .models import BuddySession
 class BuddySessionForm(forms.ModelForm):
     class Meta:
         model = BuddySession
-        fields = ["title", "type", "start_dt", "location_name", "lat", "lon", "capacity"]
+        fields = ["title", "type", "start_dt", "location_name", "capacity"]
         widgets = {
             "start_dt": forms.TextInput(attrs={"data-flatpickr": "", "placeholder": "Pick date & time"}),
         }

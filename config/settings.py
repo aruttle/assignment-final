@@ -141,13 +141,13 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]  # for /static/* assets in repo
 
-# Keep WhiteNoise simple (no manifest compression to avoid Render build quirks)
+# Keep WhiteNoise simple 
 STORAGES = {
     "staticfiles": {
         "BACKEND": "whitenoise.storage.StaticFilesStorage"
     }
 }
-# Optional: shorter cache in DEBUG
+# shorter cache in DEBUG
 if DEBUG:
     os.environ.setdefault("WHITENOISE_MAX_AGE", "0")
 
@@ -157,13 +157,13 @@ MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # -----------------------------------------------------------------------------
-# Auth redirects (simple defaults; adjust later)
+# Auth redirects 
 # -----------------------------------------------------------------------------
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
 # -----------------------------------------------------------------------------
-# Email (console in DEBUG; env-driven in production)
+# Email 
 # -----------------------------------------------------------------------------
 if DEBUG:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
@@ -183,7 +183,7 @@ else:
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@sea.local")
 
 # -----------------------------------------------------------------------------
-# Security for production (safe defaults)
+# Security for production 
 # -----------------------------------------------------------------------------
 if not DEBUG:
     SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", True)
