@@ -7,6 +7,7 @@ from django.http import HttpResponseForbidden, HttpResponse
 from django.contrib import messages 
 from .models import BuddySession, BuddyParticipant, BuddyMessage, SESSION_TYPES
 from .forms import BuddySessionForm
+from django.db.models import Q, Count
 
 
 @login_required
@@ -147,3 +148,19 @@ def delete_message(request, msg_id):
     msg.delete()
     # HTMX: remove the <li> by returning nothing and swapping outerHTML
     return HttpResponse("")
+
+@login_required
+def my_sessions(request):
+    now = timezone.now()
+    sessions = (
+        BuddySession.objects
+        .filter(
+            Q(creator=request.user) | Q(participants=request.user),  # ← fix here
+            start_dt__gte=now,
+        )
+        .select_related("creator")
+        .annotate(joined_count=Count("participants", distinct=True))
+        .order_by("start_dt")
+        .distinct()
+    )
+    return render(request, "buddies/my_sessions.html", {"sessions": sessions})

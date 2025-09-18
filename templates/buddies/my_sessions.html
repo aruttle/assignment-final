@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <h1 class="h3 mb-3">My Buddy Sessions</h1>
+
+  {% if sessions %}
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Location</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Seats</th>
+            <th class="text-end"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sess in sessions %}
+            <tr>
+              <td>{{ sess.start_dt|date:"D, M j, H:i" }}</td>
+              <td><a href="{% url 'buddies:detail' sess.id %}">{{ sess.title }}</a></td>
+              <td>{{ sess.get_type_display|default:sess.type }}</td>
+              <td>{{ sess.location_name|default:"—" }}</td>
+              <td>{% if sess.creator_id == request.user.id %}Owner{% else %}Participant{% endif %}</td>
+              <td class="text-capitalize">{{ sess.status }}</td>
+              <td>{{ sess.joined_count|default:0 }}/{{ sess.capacity }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'buddies:detail' sess.id %}">Open</a>
+                {% if sess.creator_id == request.user.id %}
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'buddies:edit' sess.id %}">Edit</a>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-muted">No upcoming sessions yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

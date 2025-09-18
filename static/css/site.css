@@ -22,3 +22,111 @@ h1, h2, h3, h4, h5 { letter-spacing: 0.2px; }
 .leaflet-container img.leaflet-marker-shadow {
   max-width: none !important;
 }
+
+/* ==== SEA Theme (Shannon-green) ==== */
+:root{
+  --sea-brand:#2e7d32;          /* main green */
+  --sea-brand-dark:#1b5e20;     /* darker for hovers */
+  --sea-ink:#0e1111;            /* body text */
+  --sea-ink-muted:#6c757d;      /* muted text */
+  --sea-hero-tint: rgba(0,0,0,.35);
+}
+
+/* Navbar branding without changing markup */
+/* --- Modern navbar theme (green gradient) --- */
+.navbar-sea{
+  --bs-navbar-color: rgba(255,255,255,.85);
+  --bs-navbar-hover-color: #fff;
+  --bs-navbar-active-color: #fff;
+  --bs-navbar-brand-color: #fff;
+  --bs-navbar-brand-hover-color: #fff;
+  background: linear-gradient(180deg, #2e7d32 0%, #1e6b28 100%);
+}
+.navbar-sea .navbar-toggler{ border-color: rgba(255,255,255,.5); }
+.navbar-sea .navbar-toggler-icon{ filter: invert(1); }
+.navbar-sea .nav-link{ color: var(--bs-navbar-color); }
+.navbar-sea .nav-link:hover, .navbar-sea .nav-link:focus{
+  color:#fff; text-decoration: underline; text-underline-offset:.25em;
+}
+.navbar-sea .navbar-text{ color:#fff; }
+
+.hero{
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;  
+  position: relative;
+  min-height: 360px;
+  border-radius: .75rem;
+}
+.hero .hero-overlay{
+  position: absolute; inset: 0;          
+  background: linear-gradient(90deg, rgba(0,0,0,.65) 0%, rgba(0,0,0,.35) 55%, rgba(0,0,0,.15) 100%);
+}
+.hero .hero-overlay .container{ position: relative; z-index: 1; }
+.hero h1, .hero .lead{
+  color:#fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,.5);
+}
+.btn-outline-light{
+  border-width: 2px;              
+}
+
+/* Responsive map height (kept) */
+#map{ height: 420px; }
+@media (min-width: 992px){ #map{ height: 60vh; } }
+
+
+/* Buttons */
+.btn-brand{
+  background: var(--sea-brand);
+  color:#fff; border: none;
+}
+.btn-brand:hover{
+  background: var(--sea-brand-dark); color:#fff;
+}
+
+/* Typography tweaks */
+body{ color: var(--sea-ink); }
+.lead{ color: var(--sea-ink); }
+.text-muted{ color: var(--sea-ink-muted) !important; }
+
+/* Map responsiveness (keeps your old height if defined) */
+#map { height: 420px; }
+@media (min-width: 992px){ #map { height: 60vh; } }
+
+/* Skip link */
+.skip-link{
+  position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden;
+}
+.skip-link:focus{
+  position:fixed; left:1rem; top:1rem; width:auto; height:auto; z-index:2000;
+  background:#000; color:#fff; padding:.5rem .75rem; border-radius:.375rem; text-decoration:none;
+}
+
+/* Light card polish */
+.shadow-sm{ box-shadow: 0 .125rem .25rem rgba(0,0,0,.08)!important; }
+
+/* Footer */
+.footer-sea{ background:#f8f9fa; }
+.footer-sea .link-secondary{
+  color:#6c757d; text-decoration:none;
+}
+.footer-sea .link-secondary:hover{
+  color:#495057; text-decoration:underline;
+}
+
+/* Swiper tweaks */
+.sea-swiper{ --swiper-navigation-color:#6c757d; --swiper-pagination-color:#2e7d32; }
+.sea-swiper .swiper-button-prev,
+.sea-swiper .swiper-button-next{
+  color: var(--swiper-navigation-color);
+}
+.sea-swiper .swiper-pagination-bullet{ opacity:.5; }
+.sea-swiper .swiper-pagination-bullet-active{ opacity:1; }
+
+/* Spot cards */
+.spot-card{
+  background:#fff; border-radius:.75rem; overflow:hidden;
+}
+.spot-card-body{ padding:1rem; }
+
