@@ -19,6 +19,12 @@ class BuddySession(models.Model):
     capacity = models.PositiveIntegerField(default=6)
     status = models.CharField(max_length=12, default="open")  # open/closed
     created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="buddy_sessions_created"
+    )
 
     participants = models.ManyToManyField(
         settings.AUTH_USER_MODEL, through="BuddyParticipant", related_name="buddy_sessions"

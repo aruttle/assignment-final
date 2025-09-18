@@ -1,23 +1,61 @@
-{% if sessions %}
-  <div class="row row-cols-1 row-cols-md-2 g-3">
-  {% for s in sessions %}
-    <div class="col">
-      <div class="card h-100">
-        <div class="card-body">
-          <h5 class="card-title mb-1">
-            <a href="{% url 'buddies:detail' s.id %}">{{ s.title }}</a>
-          </h5>
-          <div class="text-muted small mb-2">{{ s.get_type_display }} · {{ s.start_dt|date:"Y-m-d H:i" }}</div>
-          <div class="mb-2">{{ s.location_name }}</div>
-          <div class="small">Spots: {{ s.count }}/{{ s.capacity }} ({{ s.spots_left }} left)</div>
+{% load humanize buddies_extras %}
+
+{% for sess in sessions %}
+<div class="card mb-3 shadow-sm">
+  <div class="row g-0 align-items-stretch">
+    <!-- LEFT: mini map -->
+    <div class="col-md-4">
+      {% if sess.lat is not None and sess.lon is not None %}
+        <div class="map-thumb"
+             data-lat="{{ sess.lat|floatformat:5 }}"
+             data-lon="{{ sess.lon|floatformat:5 }}">
         </div>
-        <div class="card-footer bg-transparent border-0">
-          <a class="btn btn-sm btn-outline-primary" href="{% url 'buddies:detail' s.id %}">View</a>
+      {% else %}
+        <div class="map-thumb d-flex align-items-center justify-content-center bg-light text-muted">
+          No map
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- RIGHT: details -->
+    <div class="col-md-8">
+      <div class="card-body">
+        <h5 class="card-title mb-1">
+          <a href="{% url 'buddies:detail' sess.id %}">{{ sess.title }}</a>
+        </h5>
+
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="badge text-bg-{{ sess.type|type_badge }}">{{ sess.get_type_display }}</span>
+
+          {# distance chip (filled by JS). Hidden when no coords #}
+          <span class="badge bg-light text-dark distance-chip"
+                {% if sess.lat is not None and sess.lon is not None %}
+                  data-lat="{{ sess.lat }}" data-lon="{{ sess.lon }}"
+                {% else %} hidden {% endif %}>
+            <!-- JS writes: “12.4 km away” -->
+          </span>
+        </div>
+
+        <div class="small text-muted">
+          {{ sess.start_dt|date:"D, M j H:i" }}
+        </div>
+
+        {% if sess.location_name %}
+          <div class="mt-2"><span class="text-muted">Location:</span> {{ sess.location_name }}</div>
+        {% endif %}
+
+        <div class="mt-2">
+          <span class="text-muted">Capacity:</span>
+          {{ sess.count }} / {{ sess.capacity }} ({{ sess.spots_left }} left)
+        </div>
+
+        <div class="mt-3">
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'buddies:detail' sess.id %}">Open</a>
         </div>
       </div>
     </div>
-  {% endfor %}
   </div>
-{% else %}
-  <div class="alert alert-secondary mb-0">No sessions found.</div>
-{% endif %}
+</div>
+{% empty %}
+<p class="text-muted">No sessions found.</p>
+{% endfor %}

@@ -1,4 +1,4 @@
-// static/js/map.js
+
 let map;
 let markersLayer = L.layerGroup();
 

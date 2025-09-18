@@ -1,19 +1,151 @@
 {% extends "base.html" %}
-{% block title %}New buddy session — SEA{% endblock %}
+{% block title %}Create buddy session — SEA{% endblock %}
+
 {% block content %}
-<h1 class="mb-3">Create a buddy session</h1>
-<form method="post" class="col-md-7">
-  {% csrf_token %}
-  <div class="mb-3"><label class="form-label">Title</label>{{ form.title }}</div>
-  <div class="mb-3"><label class="form-label">Type</label>{{ form.type }}</div>
-  <div class="mb-3"><label class="form-label">Start</label>{{ form.start_dt }}</div>
-  <div class="mb-3"><label class="form-label">Location name</label>{{ form.location_name }}</div>
-  <!-- <div class="row">
-    <div class="col-md-6 mb-3"><label class="form-label">Latitude</label>{{ form.lat }}</div>
-    <div class="col-md-6 mb-3"><label class="form-label">Longitude</label>{{ form.lon }}</div>
-  </div> -->
-  <div class="mb-3"><label class="form-label">Capacity</label>{{ form.capacity }}</div>
-  <button class="btn btn-primary">Create</button>
-  <a class="btn btn-outline-secondary" href="{% url 'buddies:list' %}">Cancel</a>
-</form>
+<h1 class="mb-3">Create buddy session</h1>
+
+<div class="row">
+  <div class="col-lg-8">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.title.id_for_label }}">Title</label>
+        {{ form.title }}
+        {% for e in form.title.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.type.id_for_label }}">Type</label>
+        {{ form.type }}
+        {% for e in form.type.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.start_dt.id_for_label }}">Start date & time</label>
+        {{ form.start_dt }}  {# BuddySessionForm sets data-flatpickr attr #}
+        {% for e in form.start_dt.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.location_name.id_for_label }}">Location name</label>
+        {{ form.location_name }}
+        {% for e in form.location_name.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="row g-3">
+        <div class="col-sm-6">
+          <label class="form-label" for="{{ form.lat.id_for_label }}">Latitude</label>
+          {{ form.lat }}
+          {% for e in form.lat.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label" for="{{ form.lon.id_for_label }}">Longitude</label>
+          {{ form.lon }}
+          {% for e in form.lon.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div class="mt-2">
+        <button type="button" class="btn btn-outline-secondary"
+                data-bs-toggle="modal" data-bs-target="#spotPickerModal">
+          Pick on map
+        </button>
+      </div>
+
+      <div class="mb-3 mt-3">
+        <label class="form-label" for="{{ form.capacity.id_for_label }}">Capacity</label>
+        {{ form.capacity }}
+        {% for e in form.capacity.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="mt-3">
+        <button class="btn btn-primary">Create session</button>
+        <a class="btn btn-outline-secondary" href="{% url 'buddies:list' %}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Leaflet picker modal -->
+<div class="modal fade" id="spotPickerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Pick session location</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="picker-map" style="height: 420px;"></div>
+        <div class="form-text mt-2">Click the map to place a marker. Then “Use this location”.</div>
+      </div>
+      <div class="modal-footer">
+        <button id="use-picked-location" type="button" class="btn btn-primary" data-bs-dismiss="modal" disabled>
+          Use this location
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  let pickerMap = null;
+  let pickMarker = null;
+  let picked = null;
+
+  function enableButton() {
+    const btn = document.getElementById('use-picked-location');
+    btn.disabled = !picked;
+  }
+
+  const modalEl = document.getElementById('spotPickerModal');
+  modalEl.addEventListener('shown.bs.modal', function () {
+    if (!pickerMap) {
+      if (typeof L === 'undefined') {
+        console.error('Leaflet not loaded');
+        return;
+      }
+      pickerMap = L.map('picker-map').setView([52.68, -9.00], 10);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(pickerMap);
+
+      pickerMap.on('click', function(e) {
+        const { lat, lng } = e.latlng;
+        if (pickMarker) {
+          pickMarker.setLatLng([lat, lng]);
+        } else {
+          pickMarker = L.marker([lat, lng], { draggable: true }).addTo(pickerMap);
+          pickMarker.on('dragend', function(ev) {
+            const ll = ev.target.getLatLng();
+            picked = { lat: ll.lat, lon: ll.lng };
+            enableButton();
+          });
+        }
+        picked = { lat: lat, lon: lng };
+        enableButton();
+      });
+    }
+    setTimeout(() => pickerMap && pickerMap.invalidateSize(), 100);
+  });
+
+  document.getElementById('use-picked-location').addEventListener('click', function() {
+    if (!picked) return;
+    const latEl = document.getElementById('id_lat');
+    const lonEl = document.getElementById('id_lon');
+    const nameEl = document.getElementById('id_location_name');
+    if (latEl) latEl.value = picked.lat.toFixed(5);
+    if (lonEl) lonEl.value = picked.lon.toFixed(5);
+    if (nameEl && !nameEl.value) {
+      nameEl.value = `Lat ${picked.lat.toFixed(5)}, Lon ${picked.lon.toFixed(5)}`;
+    }
+  });
+})();
+</script>
 {% endblock %}

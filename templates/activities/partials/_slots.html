@@ -1,24 +1,24 @@
+{# activities/partials/_slots.html #}
 {% if slots %}
-  <div class="list-group">
+  <div class="d-flex flex-wrap gap-2">
     {% for s in slots %}
-      <div class="list-group-item d-flex align-items-center justify-content-between">
-        <div>
-          <strong>{{ s.label }}</strong>
-          <span class="text-muted"> · {{ s.remaining }} left</span>
-        </div>
-        <form class="d-flex align-items-center gap-2"
-              hx-post="{% url 'activities:book' activity.id %}"
-              hx-target="#booking-panel"
-              hx-swap="outerHTML">
-          {% csrf_token %}
-          <input type="hidden" name="start_dt" value="{{ s.iso }}">
-          <input type="number" name="party_size" min="1" max="{{ s.remaining }}" value="1"
-                 class="form-control" style="width: 90px;">
-          <button class="btn btn-primary">Book {{ s.label }}</button>
-        </form>
-      </div>
+      <button
+        class="btn btn-sm {% if s.mine %}btn-secondary{% else %}btn-outline-primary{% endif %}"
+        {% if not s.mine %}
+          hx-post="{% url 'activities:book' activity.id %}"
+          hx-target="#booking-panel"
+          hx-vals='{"start_dt":"{{ s.iso }}","party_size":1}'
+        {% endif %}
+        {% if s.mine %}disabled title="You already booked this time"{% endif %}
+      >
+        {{ s.label }} · {{ s.remaining }} left
+        {% if s.mine %} (booked){% endif %}
+      </button>
     {% endfor %}
   </div>
+  <div class="small text-muted mt-2">Tap a time to open the booking panel.</div>
 {% else %}
-  <div class="alert alert-warning mb-0">No availability for this date.</div>
+  <div class="alert alert-warning mb-0">
+    No slots available for {{ date|date:"D, M j" }}.
+  </div>
 {% endif %}

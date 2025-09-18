@@ -3,3 +3,22 @@ h1, h2, h3, h4, h5 { letter-spacing: 0.2px; }
 .lead { max-width: 60ch; }
 
 #map { height: 420px; width: 100%; border-radius: 0.5rem; }
+.map-embed { height: 300px; width: 100%; border-radius: .5rem; overflow: hidden; }
+
+
+
+/* Mini map container */
+.map-thumb {
+  height: 160px;
+  width: 100%;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+/* Guard against global img rules stretching Leaflet tiles/markers */
+.leaflet-container img.leaflet-image-layer,
+.leaflet-container .leaflet-tile,
+.leaflet-container img.leaflet-marker-icon,
+.leaflet-container img.leaflet-marker-shadow {
+  max-width: none !important;
+}

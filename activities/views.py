@@ -1,13 +1,14 @@
 # activities/views.py
-from datetime import datetime, date, time as dtime
+from __future__ import annotations
 
+from datetime import datetime, date as date_cls, time as dtime
+from dateutil import parser as dtparser
+
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Sum
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
-from dateutil import parser as dtparser
 
 from .models import Activity, Provider, Booking
 
@@ -16,7 +17,7 @@ from .models import Activity, Provider, Booking
 # Activities: list + detail
 # ---------------------------
 def activity_list(request):
-    qs = Activity.objects.select_related("provider")
+    qs = Activity.objects.select_related("provider").order_by("title")
     providers = Provider.objects.order_by("name")
 
     provider_id = request.GET.get("provider") or ""
@@ -27,48 +28,72 @@ def activity_list(request):
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
 
-    ctx = {"activities": qs, "providers": providers, "selected_provider": provider_id, "q": q}
+    ctx = {
+        "activities": qs,
+        "providers": providers,
+        "selected_provider": provider_id,
+        "q": q,
+    }
 
     if getattr(request, "htmx", False):
         return render(request, "activities/partials/_list.html", ctx)
     return render(request, "activities/list.html", ctx)
 
 
-def activity_detail(request, pk):
+def activity_detail(request, pk: int):
     activity = get_object_or_404(Activity.objects.select_related("provider"), pk=pk)
-    return render(request, "activities/detail.html", {"activity": activity})
+    today = timezone.localdate()
+    return render(request, "activities/detail.html", {"activity": activity, "today": today})
 
 
 # ---------------------------
 # Availability helpers
 # ---------------------------
-def _slot_hours():
-    # Demo window; adjust later or make per-activity
+def _slot_hours() -> list[int]:
     return [9, 11, 13, 15]
 
 
-def _make_aware(dt: datetime):
+def _make_aware(dt: datetime) -> datetime:
     tz = timezone.get_current_timezone()
     if timezone.is_naive(dt):
         return timezone.make_aware(dt, tz)
     return dt.astimezone(tz)
 
 
-def _available_slots(activity: Activity, the_date: date):
+def _available_slots(activity: Activity, the_date: date_cls, user=None) -> list[dict]:
     """
-    Returns: list of dicts like:
-      [{'dt': aware_dt, 'iso': str, 'label': 'HH:MM', 'remaining': int}]
+    Returns list of dicts:
+      [{'dt': aware_dt, 'iso': str, 'label': 'HH:MM', 'remaining': int, 'mine': bool}]
+    If `user` provided, 'mine' marks a slot the user already booked (confirmed).
     """
-    slots = []
+    slots: list[dict] = []
+    user_id = getattr(user, "id", None)
+
+    # Preload my confirmed bookings for that day to mark 'mine'
+    my_slot_set = set()
+    if user_id:
+        day_start = _make_aware(datetime.combine(the_date, dtime(0, 0)))
+        day_end = _make_aware(datetime.combine(the_date, dtime(23, 59)))
+        my_slot_set = set(
+            Booking.objects.filter(
+                user_id=user_id,
+                activity=activity,
+                status="confirmed",
+                start_dt__gte=day_start,
+                start_dt__lte=day_end,
+            ).values_list("start_dt", flat=True)
+        )
+
     for hour in _slot_hours():
         naive = datetime.combine(the_date, dtime(hour=hour, minute=0))
         start_dt = _make_aware(naive)
-        total = (
+
+        taken = (
             Booking.objects.filter(activity=activity, start_dt=start_dt, status="confirmed")
             .aggregate(total=Sum("party_size"))["total"]
             or 0
         )
-        remaining = max(activity.capacity - total, 0)
+        remaining = max(activity.capacity - taken, 0)
         if remaining > 0:
             slots.append(
                 {
@@ -76,6 +101,7 @@ def _available_slots(activity: Activity, the_date: date):
                     "iso": start_dt.isoformat(),
                     "label": start_dt.strftime("%H:%M"),
                     "remaining": remaining,
+                    "mine": (start_dt in my_slot_set),
                 }
             )
     return slots
@@ -85,7 +111,6 @@ def _available_slots(activity: Activity, the_date: date):
 # HTMX: availability + book
 # ---------------------------
 def activity_availability(request, pk: int):
-    """Returns slot buttons for a given date (partial)."""
     activity = get_object_or_404(Activity.objects.select_related("provider"), pk=pk)
     date_str = request.GET.get("date", "")
     try:
@@ -93,25 +118,19 @@ def activity_availability(request, pk: int):
     except Exception:
         the_date = timezone.localdate()
 
-    slots = _available_slots(activity, the_date)
+    slots = _available_slots(activity, the_date, user=request.user if request.user.is_authenticated else None)
     ctx = {"activity": activity, "date": the_date, "slots": slots}
     return render(request, "activities/partials/_slots.html", ctx)
 
 
+@login_required
 def booking_create(request, pk: int):
-    """Create a booking (HTMX). Returns booking panel partial or inline error."""
     activity = get_object_or_404(Activity, pk=pk)
-
-    # Require login → use our nice login page now
-    if not request.user.is_authenticated:
-        resp = HttpResponse("")
-        resp["HX-Redirect"] = f"/accounts/login/?next=/activities/{pk}/"
-        return resp
 
     start_iso = request.POST.get("start_dt", "")
     party_size_raw = request.POST.get("party_size", "1")
 
-    # Parse start_dt
+    # Parse start
     try:
         parsed = dtparser.isoparse(start_iso) if start_iso else None
         if not parsed:
@@ -124,7 +143,7 @@ def booking_create(request, pk: int):
             {"activity": activity, "error": "Invalid start time."},
         )
 
-    # party_size validation
+    # party_size
     try:
         party_size = int(party_size_raw)
         if party_size < 1:
@@ -136,8 +155,18 @@ def booking_create(request, pk: int):
             {"activity": activity, "error": "Party size must be at least 1."},
         )
 
-    # Validate against current availability
-    valid_slots = _available_slots(activity, start_dt.date())
+    # Duplicate (same slot by same user) guard
+    if Booking.objects.filter(
+        user=request.user, activity=activity, start_dt=start_dt, status="confirmed"
+    ).exists():
+        return render(
+            request,
+            "activities/partials/_booking_panel.html",
+            {"activity": activity, "error": "You already have this time booked."},
+        )
+
+    # Capacity check
+    valid_slots = _available_slots(activity, start_dt.date(), user=request.user)
     matching = next((s for s in valid_slots if s["dt"] == start_dt), None)
     if not matching:
         return render(
@@ -171,33 +200,31 @@ def booking_create(request, pk: int):
 
 
 # ---------------------------
-# My Bookings + Cancel
+# My bookings + cancel (delete)
 # ---------------------------
 @login_required
 def my_bookings(request):
-    """List upcoming confirmed bookings for the current user."""
-    qs = (
-        Booking.objects
-        .filter(user=request.user, status="confirmed", start_dt__gte=timezone.now())
+    bookings = (
+        Booking.objects.filter(user=request.user)
         .select_related("activity", "activity__provider")
-        .order_by("start_dt")
+        .order_by("-created_at")
     )
-    return render(request, "activities/my_bookings.html", {"bookings": qs})
+    return render(request, "activities/my_bookings.html", {"bookings": bookings})
 
 
-@require_POST
 @login_required
 def booking_cancel(request, pk: int):
-    """Cancel a booking you own. HTMX returns updated row; fallback redirects."""
-    b = get_object_or_404(
+    booking = get_object_or_404(
         Booking.objects.select_related("activity", "activity__provider"),
-        pk=pk, user=request.user
+        pk=pk,
     )
-    b.status = "cancelled"
-    b.save(update_fields=["status"])
+    if booking.user_id != request.user.id and not (request.user.is_staff or request.user.is_superuser):
+        return HttpResponseForbidden("Not allowed")
 
-    if getattr(request, "htmx", False):
-        # Return just the updated row so the table swaps inline
-        return render(request, "activities/partials/_booking_row.html", {"b": b})
+    if request.method == "POST":
+        booking.delete()
+        if getattr(request, "htmx", False):
+            return HttpResponse("")  # removes the row
+        return redirect("my_bookings")
 
     return redirect("my_bookings")

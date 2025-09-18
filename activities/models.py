@@ -1,5 +1,7 @@
 from django.db import models
 from django.conf import settings
+from django.db.models import Q
+
 
 class Provider(models.Model):
     name = models.CharField(max_length=120)
@@ -7,6 +9,7 @@ class Provider(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class Activity(models.Model):
     provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name="activities")
@@ -30,10 +33,13 @@ class Activity(models.Model):
     def __str__(self):
         return f"{self.title} — {self.provider.name}"
 
+
 STATUS_CHOICES = [
     ("confirmed", "Confirmed"),
     ("cancelled", "Cancelled"),
 ]
+
+
 class Booking(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="bookings")
     activity = models.ForeignKey(Activity, on_delete=models.CASCADE, related_name="bookings")
@@ -45,6 +51,14 @@ class Booking(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["start_dt"]),
+        ]
+        # One booking per user per activity+time while it's confirmed
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "activity", "start_dt"],
+                condition=Q(status="confirmed"),
+                name="uniq_confirmed_booking_per_user_slot",
+            )
         ]
 
     def __str__(self):

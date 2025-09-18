@@ -1,29 +1,90 @@
 {% extends "base.html" %}
+{% load humanize buddies_extras %}
 {% block title %}{{ sess.title }} — Buddy session{% endblock %}
+
 {% block content %}
 <h1 class="mb-1">{{ sess.title }}</h1>
-<div class="text-muted mb-2">{{ sess.get_type_display }} · {{ sess.start_dt|date:"Y-m-d H:i" }}</div>
-<div class="mb-2">{{ sess.location_name }}</div>
 
-<div id="join-box" class="mb-3">
-  {% include "buddies/partials/_join_box.html" with sess=sess %}
+<div class="d-flex align-items-center gap-2 mb-3">
+  <span class="badge text-bg-{{ sess.type|type_badge }}">{{ sess.get_type_display }}</span>
+  <span class="small text-muted">{{ sess.start_dt|date:"D, M j H:i" }}</span>
 </div>
 
-<h5 class="mt-4">Messages</h5>
-<ul id="messages-list" class="list-group mb-3">
-  {% for msg in messages %}
-    {% include "buddies/partials/_message_item.html" with msg=msg %}
-  {% endfor %}
-</ul>
+<div class="row g-4">
+  <div class="col-lg-7">
+    {% if sess.lat is not None and sess.lon is not None %}
+      <div id="detail-map" class="map-embed"
+           data-lat="{{ sess.lat|floatformat:5 }}"
+           data-lon="{{ sess.lon|floatformat:5 }}"></div>
+    {% else %}
+      <div class="alert alert-light">No coordinates set for this session.</div>
+    {% endif %}
 
-<form class="d-flex gap-2"
-      hx-post="{% url 'buddies:message' sess.id %}"
-      hx-target="#messages-list"
-      hx-swap="beforeend">
-  {% csrf_token %}
-  <input name="body" class="form-control" placeholder="Write a message…" />
-  <button class="btn btn-primary">Send</button>
-</form>
+    <div class="card mt-3">
+      <div class="card-header">
+        <strong>Messages</strong>
+      </div>
+      <div class="card-body">
+        <ul id="messages" class="list-group vstack gap-2 list-unstyled mb-0">
+          {% for msg in messages %}
+            {% include "buddies/partials/_message_item.html" with msg=msg %}
+          {% empty %}
+            <div class="text-muted">No messages yet.</div>
+          {% endfor %}
+        </ul>
 
-<a class="btn btn-outline-secondary mt-3" href="{% url 'buddies:list' %}">Back to list</a>
+        {# Composer block that will be OOB-swapped by join/leave #}
+        <div id="message-composer">
+          {% include "buddies/partials/_message_composer.html" %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-body">
+        {% if sess.location_name %}
+          <div class="mb-2"><span class="text-muted">Location:</span> {{ sess.location_name }}</div>
+        {% endif %}
+        <div class="mb-2"><span class="text-muted">Capacity:</span> {{ sess.count }} / {{ sess.capacity }} ({{ sess.spots_left }} left)</div>
+        <div class="mb-2">
+          <span class="text-muted">Created by:</span>
+          {% if sess.creator %}
+            {{ sess.creator.get_full_name|default:sess.creator.username }}
+          {% else %}
+            <em>Unknown</em>
+          {% endif %}
+        </div>
+
+        {% include "buddies/partials/_join_box.html" %}
+
+        {% if request.user.is_staff or request.user.id == sess.creator_id %}
+          <div class="d-flex gap-2 mt-3">
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'buddies:edit' sess.id %}">Edit session</a>
+            <form method="post" action="{% url 'buddies:delete' sess.id %}"
+                  onsubmit="return confirm('Delete this session? This cannot be undone.');">
+              {% csrf_token %}
+              <button class="btn btn-outline-danger btn-sm">Delete session</button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if sess.lat is not None and sess.lon is not None %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const el = document.getElementById('detail-map');
+  if (!el || typeof L === 'undefined') return;
+  const lat = parseFloat(el.dataset.lat), lon = parseFloat(el.dataset.lon);
+  const map = L.map(el).setView([lat, lon], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+  L.marker([lat, lon]).addTo(map);
+  setTimeout(() => map.invalidateSize(), 0);
+});
+</script>
+{% endif %}
 {% endblock %}

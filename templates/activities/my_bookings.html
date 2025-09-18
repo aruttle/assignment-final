@@ -1,22 +1,22 @@
 {% extends "base.html" %}
-{% block title %}My Bookings — SEA{% endblock %}
+{% block title %}My bookings — SEA{% endblock %}
+
 {% block content %}
-<h1 class="mb-3">My Bookings</h1>
+<h1 class="mb-3">My bookings</h1>
 
 {% if bookings %}
   <div class="table-responsive">
     <table class="table align-middle">
       <thead>
         <tr>
-          <th style="width: 160px;">Start</th>
           <th>Activity</th>
-          <th>Provider</th>
-          <th style="width: 100px;">Party</th>
-          <th style="width: 130px;">Status</th>
-          <th class="text-end" style="width: 140px;">Action</th>
+          <th>When</th>
+          <th>Party</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
         </tr>
       </thead>
-      <tbody id="my-bookings-body">
+      <tbody id="booking-table">
         {% for b in bookings %}
           {% include "activities/partials/_booking_row.html" with b=b %}
         {% endfor %}
@@ -24,8 +24,6 @@
     </table>
   </div>
 {% else %}
-  <div class="alert alert-secondary">You have no upcoming bookings yet.</div>
+  <p class="text-muted">You have no bookings yet.</p>
 {% endif %}
-
-<a class="btn btn-outline-secondary mt-3" href="{% url 'activities:list' %}">Browse activities</a>
 {% endblock %}

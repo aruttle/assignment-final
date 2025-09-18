@@ -1,8 +1,10 @@
-<div class="d-flex align-items-center gap-3">
+<div id="join-box" class="d-flex align-items-center gap-3">
   <div>Participants: <strong>{{ sess.count }}</strong> / {{ sess.capacity }} ({{ sess.spots_left }} left)</div>
+
   {% if error %}
     <div class="text-danger small">{{ error }}</div>
   {% endif %}
+
   {% if request.user.is_authenticated %}
     <form hx-post="{% url 'buddies:toggle_join' sess.id %}"
           hx-target="#join-box" hx-swap="outerHTML">
@@ -18,4 +20,9 @@
   {% else %}
     <a class="btn btn-sm btn-primary" href="{% url 'login' %}?next={{ request.path }}">Login to join</a>
   {% endif %}
+</div>
+
+{# --- OOB SWAP: also refresh the message composer area --- #}
+<div id="message-composer" hx-swap-oob="true">
+  {% include "buddies/partials/_message_composer.html" %}
 </div>

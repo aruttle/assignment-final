@@ -1,9 +1,28 @@
+{% load humanize %}
 {% if error %}
   <li class="list-group-item text-danger">{{ error }}</li>
 {% elif msg %}
-  <li class="list-group-item">
-    <strong>{{ msg.user.get_full_name|default:msg.user.username }}</strong>
-    <span class="text-muted small">· {{ msg.created_at|date:"Y-m-d H:i" }}</span>
-    <div>{{ msg.body|linebreaksbr }}</div>
+  <li id="message-{{ msg.id }}" class="list-group-item">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>{{ msg.user.get_full_name|default:msg.user.username }}</strong>
+        <span class="text-muted small">· {{ msg.created_at|naturaltime }}</span>
+      </div>
+
+      {% if request.user.is_authenticated %}
+        {% if request.user.id == msg.user_id or request.user.id == msg.session.creator_id or request.user.is_staff or request.user.is_superuser %}
+          <form method="post"
+                hx-post="{% url 'buddies:delete_message' msg.id %}"
+                hx-target="#message-{{ msg.id }}"
+                hx-swap="outerHTML">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-outline-danger py-0">Delete</button>
+          </form>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    <div class="mt-1">{{ msg.body|linebreaksbr }}</div>
   </li>
 {% endif %}
+
