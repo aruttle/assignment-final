@@ -1,12 +1,17 @@
 // static/js/map-thumbs.js
-// Initialize small, non-interactive Leaflet maps for elements with .map-thumb
+// Initialize small Leaflet thumbnails for elements with .map-thumb
 (function () {
-  function reallyInit(el) {
+  function initThumb(el) {
+    if (el.dataset.initialized === "1") return;
+    el.dataset.initialized = "1";
+
     const lat = parseFloat(el.dataset.lat);
     const lon = parseFloat(el.dataset.lon);
-    if (isNaN(lat) || isNaN(lon)) return;
+    const zoom = parseInt(el.dataset.zoom || "12", 10);
 
-    const map = L.map(el, {
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || typeof L === "undefined") return;
+
+    const m = L.map(el, {
       attributionControl: false,
       zoomControl: false,
       dragging: false,
@@ -15,46 +20,32 @@
       boxZoom: false,
       keyboard: false,
       tap: false,
-    }).setView([lat, lon], 12);
+      touchZoom: false,
+    });
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
-    }).addTo(map);
+    }).addTo(m);
 
-    L.marker([lat, lon]).addTo(map);
+    m.setView([lat, lon], zoom);
+    L.marker([lat, lon]).addTo(m);
 
-    // Recalculate after layout settles
-    setTimeout(() => map.invalidateSize(), 0);
-    setTimeout(() => map.invalidateSize(), 150);
-    setTimeout(() => map.invalidateSize(), 400);
-
-    el.dataset.inited = "1";
-  }
-
-  function initThumb(el) {
-    if (el.dataset.inited || typeof L === "undefined") return;
-
-    // Wait until element has non-zero size, then init
-    const tryInit = (retries = 10) => {
-      if (el.clientWidth > 0 && el.clientHeight > 0) {
-        reallyInit(el);
-      } else if (retries > 0) {
-        setTimeout(() => tryInit(retries - 1), 50);
-      }
-    };
-    requestAnimationFrame(() => tryInit());
+    // Invalidate after paint so Leaflet sizes correctly inside the card
+    setTimeout(() => m.invalidateSize(), 50);
   }
 
   function scan(root) {
     (root || document).querySelectorAll(".map-thumb").forEach(initThumb);
   }
 
+  // Initial load
   document.addEventListener("DOMContentLoaded", function () {
     scan(document);
   });
 
-  // After HTMX swaps settle, re-scan the swapped area
-  document.body.addEventListener("htmx:afterSettle", function (e) {
-    scan(e.target);
-  });
+  // Re-scan after HTMX swaps/settle
+  if (window.htmx) {
+    htmx.on("htmx:afterSwap", (e) => scan(e.target));
+    htmx.on("htmx:afterSettle", (e) => scan(e.target));
+  }
 })();

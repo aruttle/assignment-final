@@ -37,7 +37,11 @@
 
 <nav class="navbar navbar-expand-lg navbar-sea border-bottom" role="navigation" aria-label="Main navigation">
   <div class="container">
-    <a class="navbar-brand fw-bold" href="{% url 'core:home' %}">SEA</a>
+   <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'core:home' %}">
+  <img src="{% static 'images/logo-sea.png' %}"
+       alt="SEA — Shannon Estuary Activities"
+       class="brand-logo brand-logo--invert brand-logo--scale">
+</a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
             aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">

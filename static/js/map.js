@@ -1,6 +1,5 @@
-
 let map;
-let markersLayer = L.layerGroup();
+const markersLayer = L.layerGroup();
 
 function initMap() {
   const el = document.getElementById('map');
@@ -15,10 +14,15 @@ function initMap() {
   }).addTo(map);
 
   markersLayer.addTo(map);
-  console.log('Map initialized (v2).');
+
+  // Expose the map so other scripts (home-swiper) can pan to a spot
+  window._seaMap = map;
+
+  console.log('Map initialized (SEA).');
 }
 
 function addSpot(spot) {
+  // Optional activity list in popup
   let activityHtml = "";
   if (spot.activities && spot.activities.length) {
     activityHtml = '<div class="mt-2"><div class="fw-semibold mb-1">Activities here:</div><ul class="list-unstyled mb-2">';
@@ -32,7 +36,7 @@ function addSpot(spot) {
   const popupHtml = `
     <div>
       <strong>${spot.name}</strong><br>
-      ${spot.type}
+      ${spot.type || ""}
       ${activityHtml}
       <div class="mt-2">
         <button class="btn btn-sm btn-outline-primary"
@@ -46,13 +50,36 @@ function addSpot(spot) {
   markersLayer.addLayer(marker);
 }
 
+function clearSpots() {
+  markersLayer.clearLayers();
+}
 
+// Accept either plain list of spots OR GeoJSON FeatureCollection
+function normalizeSpots(payload) {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload;
 
-function clearSpots() { markersLayer.clearLayers(); }
+  if (payload.type === 'FeatureCollection' && Array.isArray(payload.features)) {
+    return payload.features.map(f => {
+      const p = f.properties || {};
+      const coords = (f.geometry && f.geometry.coordinates) || [null, null]; // [lon, lat]
+      return {
+        name: p.name,
+        type: p.type,
+        lat: coords[1],
+        lon: coords[0],
+        activities: p.activities || []
+      };
+    });
+  }
+  return [];
+}
 
-function updateSpots(spots) {
+function updateSpots(spotsPayload) {
+  const spots = normalizeSpots(spotsPayload);
   clearSpots();
   spots.forEach(addSpot);
+
   if (markersLayer.getLayers().length > 0) {
     const groupBounds = L.featureGroup(markersLayer.getLayers()).getBounds();
     map.fitBounds(groupBounds.pad(0.2));
@@ -60,7 +87,15 @@ function updateSpots(spots) {
   console.log(`Loaded ${spots.length} spots.`);
 }
 
+// Helper used by the home swiper to pan the map
+window.panToSpot = function(lat, lon, zoom) {
+  const m = window._seaMap || map;
+  if (m && typeof m.setView === "function") {
+    m.setView([lat, lon], zoom || 12);
+  }
+};
 
+// DOM ready
 (function ready(fn) {
   if (document.readyState !== 'loading') fn();
   else document.addEventListener('DOMContentLoaded', fn);

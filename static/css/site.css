@@ -1,21 +1,13 @@
-/* minimal readable defaults */
+/* === Base typography === */
 h1, h2, h3, h4, h5 { letter-spacing: 0.2px; }
 .lead { max-width: 60ch; }
 
+/* === Map containers === */
 #map { height: 420px; width: 100%; border-radius: 0.5rem; }
+@media (min-width: 992px){ #map { height: 60vh; } }
 .map-embed { height: 300px; width: 100%; border-radius: .5rem; overflow: hidden; }
 
-
-
-/* Mini map container */
-.map-thumb {
-  height: 160px;
-  width: 100%;
-  border-radius: 0.5rem;
-  overflow: hidden;
-}
-
-/* Guard against global img rules stretching Leaflet tiles/markers */
+/* Leaflet image guard */
 .leaflet-container img.leaflet-image-layer,
 .leaflet-container .leaflet-tile,
 .leaflet-container img.leaflet-marker-icon,
@@ -23,17 +15,16 @@ h1, h2, h3, h4, h5 { letter-spacing: 0.2px; }
   max-width: none !important;
 }
 
-/* ==== SEA Theme (Shannon-green) ==== */
+/* === SEA Theme (Shannon-green) & Navbar === */
 :root{
-  --sea-brand:#2e7d32;          /* main green */
-  --sea-brand-dark:#1b5e20;     /* darker for hovers */
-  --sea-ink:#0e1111;            /* body text */
-  --sea-ink-muted:#6c757d;      /* muted text */
+  --sea-brand:#2e7d32;          
+  --sea-brand-dark:#1b5e20;     
+  --sea-ink:#0e1111;            
+  --sea-ink-muted:#6c757d;      
   --sea-hero-tint: rgba(0,0,0,.35);
 }
 
-/* Navbar branding without changing markup */
-/* --- Modern navbar theme (green gradient) --- */
+/* Green gradient navbar */
 .navbar-sea{
   --bs-navbar-color: rgba(255,255,255,.85);
   --bs-navbar-hover-color: #fff;
@@ -50,51 +41,61 @@ h1, h2, h3, h4, h5 { letter-spacing: 0.2px; }
 }
 .navbar-sea .navbar-text{ color:#fff; }
 
+/* logo without increasing navbar height */
+.navbar-sea,
+.navbar-sea .container { overflow: visible; }   
+.navbar-sea .container { min-height: 56px; }    
+
+.navbar-sea .navbar-brand .brand-logo{
+  height: 40px;       /* layout box */
+  width: auto;
+  display: block;
+}
+/* Scale the logo */
+.navbar-sea .navbar-brand .brand-logo--scale{
+  transform: scale(1.9);
+  transform-origin: left center;
+}
+/* desktop logo: scalable  */
+@media (min-width: 992px){
+  .navbar-sea .navbar-brand .brand-logo{ height: 44px; }
+  .navbar-sea .navbar-brand .brand-logo--scale{ transform: scale(1.9); }
+}
+/* invert filter for colored logos on green; remove when you switch to a white asset */
+.navbar-sea .navbar-brand .brand-logo--invert{
+  filter: brightness(0) invert(1);
+  opacity: .98;
+}
+/* spacing tweaks so scaled logo doesn’t crowd links */
+.navbar-sea .navbar-brand{ padding-top: .125rem; padding-bottom: .125rem; margin-right: .5rem; }
+
+/* === Hero === */
 .hero{
   background-size: cover;
   background-position: center top;
-  background-repeat: no-repeat;  
+  background-repeat: no-repeat;
   position: relative;
   min-height: 360px;
   border-radius: .75rem;
 }
 .hero .hero-overlay{
-  position: absolute; inset: 0;          
+  position: absolute; inset: 0;
   background: linear-gradient(90deg, rgba(0,0,0,.65) 0%, rgba(0,0,0,.35) 55%, rgba(0,0,0,.15) 100%);
 }
 .hero .hero-overlay .container{ position: relative; z-index: 1; }
-.hero h1, .hero .lead{
-  color:#fff;
-  text-shadow: 0 2px 8px rgba(0,0,0,.5);
-}
-.btn-outline-light{
-  border-width: 2px;              
-}
+.hero h1, .hero .lead{ color:#fff; text-shadow: 0 2px 8px rgba(0,0,0,.5); }
+.btn-outline-light{ border-width: 2px; }
 
-/* Responsive map height (kept) */
-#map{ height: 420px; }
-@media (min-width: 992px){ #map{ height: 60vh; } }
+/* === Buttons === */
+.btn-brand{ background: var(--sea-brand); color:#fff; border: none; }
+.btn-brand:hover{ background: var(--sea-brand-dark); color:#fff; }
 
-
-/* Buttons */
-.btn-brand{
-  background: var(--sea-brand);
-  color:#fff; border: none;
-}
-.btn-brand:hover{
-  background: var(--sea-brand-dark); color:#fff;
-}
-
-/* Typography tweaks */
+/* === Typography === */
 body{ color: var(--sea-ink); }
 .lead{ color: var(--sea-ink); }
 .text-muted{ color: var(--sea-ink-muted) !important; }
 
-/* Map responsiveness (keeps your old height if defined) */
-#map { height: 420px; }
-@media (min-width: 992px){ #map { height: 60vh; } }
-
-/* Skip link */
+/* === Skip link === */
 .skip-link{
   position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden;
 }
@@ -103,30 +104,36 @@ body{ color: var(--sea-ink); }
   background:#000; color:#fff; padding:.5rem .75rem; border-radius:.375rem; text-decoration:none;
 }
 
-/* Light card polish */
+/* === Card polish === */
 .shadow-sm{ box-shadow: 0 .125rem .25rem rgba(0,0,0,.08)!important; }
 
-/* Footer */
+/* === Footer === */
 .footer-sea{ background:#f8f9fa; }
-.footer-sea .link-secondary{
-  color:#6c757d; text-decoration:none;
-}
-.footer-sea .link-secondary:hover{
-  color:#495057; text-decoration:underline;
-}
+.footer-sea .link-secondary{ color:#6c757d; text-decoration:none; }
+.footer-sea .link-secondary:hover{ color:#495057; text-decoration:underline; }
 
-/* Swiper tweaks */
+/* === Swiper tweaks === */
 .sea-swiper{ --swiper-navigation-color:#6c757d; --swiper-pagination-color:#2e7d32; }
-.sea-swiper .swiper-button-prev,
-.sea-swiper .swiper-button-next{
-  color: var(--swiper-navigation-color);
-}
+.sea-swiper .swiper-button-prev, .sea-swiper .swiper-button-next{ color: var(--swiper-navigation-color); }
 .sea-swiper .swiper-pagination-bullet{ opacity:.5; }
 .sea-swiper .swiper-pagination-bullet-active{ opacity:1; }
 
-/* Spot cards */
-.spot-card{
-  background:#fff; border-radius:.75rem; overflow:hidden;
+/* === Spot cards === */
+.spot-card{ background:#fff; border-radius:.75rem; overflow:hidden; }
+.spot-card-img{
+  height:140px; background-size:cover; background-position:center; background-repeat:no-repeat;
 }
+@media (min-width: 768px){ .spot-card-img{ height: 180px; } }
 .spot-card-body{ padding:1rem; }
 
+/* === Buddy list map thumbnails === */
+.map-thumb{
+  width: 100%;
+  height: 160px;
+  border-radius: .5rem;
+  overflow: hidden;
+  background: #e9ecef;
+  box-shadow: 0 .125rem .25rem rgba(0,0,0,.08);
+}
+@media (min-width: 992px){ .map-thumb{ height: 180px; } }
+.map-thumb .leaflet-container{ background:#e9ecef; }
