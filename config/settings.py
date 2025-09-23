@@ -6,6 +6,7 @@ Django settings (Django 5) with HTMX, WhiteNoise, env config, and simple caching
 from pathlib import Path
 import os
 import environ
+from urllib.parse import urlparse
 
 # -----------------------------------------------------------------------------
 # Paths
@@ -27,6 +28,23 @@ SECRET_KEY = env("SECRET_KEY", default="dev-secret-key")  # replace in prod
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+
+# Auto-allow Render hostname/CSRF origin
+RENDER_EXTERNAL_URL = env("RENDER_EXTERNAL_URL", default="")
+if RENDER_EXTERNAL_URL:
+    try:
+        o = urlparse(RENDER_EXTERNAL_URL)
+        host = (o.netloc or o.path).split(",")[0].strip()  # e.g. "sea-web.onrender.com"
+        if host and host not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(host)
+        # Prefer provided scheme; default to https if missing
+        origin = f"{o.scheme}://{host}" if o.scheme in ("http", "https") else f"https://{host}"
+        if origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(origin)
+    except Exception:
+        # Keep running even if parsing fails
+        pass
+
 
 # External API keys (optional)
 STORMGLASS_API_KEY = env("STORMGLASS_API_KEY", default="")
