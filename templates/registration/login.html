@@ -24,4 +24,8 @@
   <button class="btn btn-primary">Login</button>
   <a class="btn btn-outline-secondary" href="{% url 'accounts:signup' %}{% if next %}?next={{ next }}{% endif %}">Create an account</a>
 </form>
+
+<div class="d-flex justify-content-between mt-3">
+  <a class="small" href="{% url 'password_reset' %}">Forgot your password?</a>
+</div>
 {% endblock %}

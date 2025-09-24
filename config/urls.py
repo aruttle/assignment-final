@@ -21,12 +21,12 @@ from accounts.views import me_dashboard
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", include("core.urls", namespace="core")),
-    path("activities/", include("activities.urls", namespace="activities")),
-    path("accounts/", include("accounts.urls", namespace="accounts")),     
-    path("accounts/", include("django.contrib.auth.urls")),                
-    path("safety/", include("safety.urls", namespace="safety")),
-    path("buddies/", include("buddies.urls", namespace="buddies")),
+    path("", include(("core.urls", "core"), namespace="core")),
+    path("activities/", include(("activities.urls", "activities"), namespace="activities")),
+    path("accounts/", include("django.contrib.auth.urls")),
+    path("accounts/", include(("accounts.urls", "accounts"), namespace="accounts")),
+    path("safety/", include(("safety.urls", "safety"), namespace="safety")),
+    path("buddies/", include(("buddies.urls", "buddies"), namespace="buddies")),
     path("me/bookings/", activities_views.my_bookings, name="my_bookings"),
     path("me/", me_dashboard, name="me_dashboard"),
 ]
