@@ -24,7 +24,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 # Core toggles
 DEBUG = env.bool("DEBUG", True)
-SECRET_KEY = env("SECRET_KEY", default="dev-secret-key")  # replace in prod
+SECRET_KEY = env("SECRET_KEY", default="dev-secret-key")  
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
@@ -34,7 +34,7 @@ RENDER_EXTERNAL_URL = env("RENDER_EXTERNAL_URL", default="")
 if RENDER_EXTERNAL_URL:
     try:
         o = urlparse(RENDER_EXTERNAL_URL)
-        host = (o.netloc or o.path).split(",")[0].strip()  # e.g. "sea-web.onrender.com"
+        host = (o.netloc or o.path).split(",")[0].strip()  
         if host and host not in ALLOWED_HOSTS:
             ALLOWED_HOSTS.append(host)
         # Prefer provided scheme; default to https if missing
