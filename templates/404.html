@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Page not found — SEA{% endblock %}
+{% block content %}
+<div class="text-center my-5">
+  <h1 class="display-6">Page not found</h1>
+  <p class="text-muted">Sorry, we couldn't find that page.</p>
+  <a class="btn btn-brand" href="{% url 'core:home' %}">Go home</a>
+</div>
+{% endblock %}

@@ -1,4 +1,3 @@
-# safety/views.py
 from __future__ import annotations
 
 import math
@@ -30,9 +29,9 @@ def _rate(wind_ms: float, gust_ms: float, precip_prob: int):
       Caution: wind < 9,  gust < 12, precip_prob < 70
       Avoid:   otherwise
     """
-    if wind_ms < 10 and gust_ms < 25 and precip_prob < 40:
+    if wind_ms < 6 and gust_ms < 9 and precip_prob < 40:
         return "safe", "text-bg-success", "Safe conditions"
-    if wind_ms < 25 and gust_ms < 50 and precip_prob < 70:
+    if wind_ms < 9 and gust_ms < 12 and precip_prob < 70:
         return "caution", "text-bg-warning", "Use caution"
     return "avoid", "text-bg-danger", "Avoid today"
 

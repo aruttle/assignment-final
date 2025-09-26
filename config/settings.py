@@ -124,6 +124,20 @@ if not DEBUG and DATABASES["default"]["ENGINE"].endswith("postgresql"):
     DATABASES["default"].setdefault("OPTIONS", {})
     DATABASES["default"]["OPTIONS"].setdefault("sslmode", "require")
 
+# --- Test DB override: use SQLite for tests to avoid Postgres CREATEDB perms ---
+import sys
+
+RUNNING_TESTS = any(arg in sys.argv for arg in ("test", "pytest"))
+if RUNNING_TESTS and env.bool("TEST_USE_SQLITE", True):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": ":memory:",
+        }
+    }
+    # No persistent connections for SQLite test DB
+    DATABASES["default"]["CONN_MAX_AGE"] = 0
+
 # -----------------------------------------------------------------------------
 # Caches (used for tide/weather response caching)
 # -----------------------------------------------------------------------------
@@ -180,21 +194,27 @@ LOGIN_URL = "/accounts/login/"
 # -----------------------------------------------------------------------------
 # Email
 # -----------------------------------------------------------------------------
-if DEBUG:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-else:
-    EMAIL_BACKEND = env(
-        "EMAIL_BACKEND",
-        default="django.core.mail.backends.console.EmailBackend",
-    )
-    if EMAIL_BACKEND.endswith("smtp.EmailBackend"):
-        EMAIL_HOST = env("EMAIL_HOST", default="")
-        EMAIL_PORT = env.int("EMAIL_PORT", default=587)
-        EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
-        EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
-        EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
-        EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+# -----------------------------------------------------------------------------
+# Email
+# -----------------------------------------------------------------------------
+# Prefer env var even in DEBUG so we can test SMTP locally
+EMAIL_BACKEND = env(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.console.EmailBackend",
+)
+
+if EMAIL_BACKEND.endswith("smtp.EmailBackend"):
+    EMAIL_HOST = env("EMAIL_HOST", default="")
+    EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+    EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+    EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
+    EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+    EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+    EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=15)
+# else: console backend, no extra config
+
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@sea.local")
+
 
 # -----------------------------------------------------------------------------
 # Security for production

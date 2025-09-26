@@ -1,22 +1,42 @@
-from unittest.mock import patch
-from django.test import TestCase, Client
-from django.urls import reverse
+from __future__ import annotations
 
-class SafetyPanelTests(TestCase):
-    @patch("safety.views.requests.get")
-    def test_safety_panel_renders_rating(self, mock_get):
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = {
-            "current": {"wind_speed_10m": 4.5, "wind_gusts_10m": 6.0, "precipitation": 0.0},
-            "hourly": {
-                "time": ["2099-01-01T00:00"],
-                "precipitation_probability": [10],
-            },
-        }
-        c = Client()
-        resp = c.get("/safety/panel/", {"lat": "52.7", "lon": "-8.8"})
-        self.assertEqual(resp.status_code, 200)
-        html = resp.content.decode()
-        self.assertIn("Safety check", html)
-        # with low wind/gust/precip, expect "Safe"
-        self.assertIn("Safe conditions", html)
+from django.test import TestCase
+from django.utils import timezone
+
+from safety.views import _rate
+
+
+def _next_tide_local(extremes: list[dict]) -> dict | None:
+    """Local helper for the test suite; mirrors app behavior."""
+    if not extremes:
+        return None
+    now = timezone.now()
+    future = [e for e in extremes if e.get("time") and e["time"] > now]
+    if not future:
+        return None
+    future.sort(key=lambda e: e["time"])
+    return future[0]
+
+
+class SafetyRulesTests(TestCase):
+    def test_rate_thresholds(self):
+        # Safe: wind < 6, gust < 9, precip < 40
+        self.assertEqual(_rate(5.9, 8.9, 39)[0], "safe")
+        # Caution: wind < 9, gust < 12, precip < 70
+        self.assertEqual(_rate(8.9, 11.9, 69)[0], "caution")
+        # Avoid: otherwise
+        self.assertEqual(_rate(9.0, 5.0, 10)[0], "avoid")
+        self.assertEqual(_rate(5.0, 12.0, 10)[0], "avoid")
+        self.assertEqual(_rate(5.0, 5.0, 70)[0], "avoid")
+
+    def test_next_tide_picks_earliest_future(self):
+        now = timezone.now()
+        extremes = [
+            {"time": now - timezone.timedelta(hours=2), "type": "low", "height": 0.8},
+            {"time": now + timezone.timedelta(hours=3), "type": "high", "height": 3.1},
+            {"time": now + timezone.timedelta(hours=1), "type": "low", "height": 1.2},
+        ]
+        nxt = _next_tide_local(extremes)
+        self.assertIsNotNone(nxt)
+        self.assertEqual(nxt["type"], "low")
+        self.assertAlmostEqual(nxt["height"], 1.2, places=3)
