@@ -1,45 +1,64 @@
 {% extends "base.html" %}
-{% load humanize buddies_extras %}
+{% load static humanize %}
 {% block title %}My dashboard — SEA{% endblock %}
 
 {% block content %}
-<h1 class="h3 mb-3">Your dashboard</h1>
+
+<!-- Hero (reuses .hero + .hero-buddies styles) -->
+<section class="hero hero-buddies mb-4 rounded-3 overflow-hidden"
+         style="background-image: url('{% static "images/hero-dashboard.jpg" %}');">
+  <div class="hero-overlay">
+    <div class="container py-4 py-md-5">
+      <div class="col-12 col-lg-9 text-white">
+        <h1 class="display-6 fw-bold mb-2">Your dashboard</h1>
+        <p class="lead mb-3">At a glance: bookings, buddy sessions, and the latest chatter.</p>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-outline-light btn-sm" href="{% url 'activities:list' %}">Find activities</a>
+          <a class="btn btn-brand btn-sm" href="{% url 'buddies:create' %}">Create buddy session</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <div class="row g-4">
-  <!-- Bookings -->
+  <!-- Upcoming bookings -->
   <div class="col-12 col-lg-6">
-    <div class="card h-100">
+    <div class="card h-100 shadow-sm">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h2 class="h5 mb-0">Upcoming bookings</h2>
           <a class="btn btn-sm btn-outline-secondary" href="{% url 'my_bookings' %}">View all</a>
         </div>
+
         {% if bookings %}
           <ul class="list-group list-group-flush">
             {% for b in bookings %}
               <li class="list-group-item px-0">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                  <div>
+                <div class="d-flex align-items-start justify-content-between gap-3">
+                  <div class="me-2">
                     <div class="fw-semibold">
                       {% if b.activity %}
-                        <a href="{% url 'activities:detail' b.activity.id %}">{{ b.activity.title }}</a>
+                        <a class="stretched-link text-decoration-none" href="{% url 'activities:detail' b.activity.id %}">
+                          {{ b.activity.title }}
+                        </a>
                       {% else %}
                         Booking #{{ b.id }}
                       {% endif %}
                     </div>
-                    {% if booking_dt_field %}
-                      <div class="text-muted small">
-                        {{ b|attr:booking_dt_field|date:"D, M j H:i" }}
-                      </div>
-                    {% endif %}
+                    <div class="text-muted small">
+                      {{ b.start_dt|date:"D, M j H:i" }}
+                    </div>
                   </div>
-                  <a class="btn btn-sm btn-outline-primary" href="{% url 'my_bookings' %}">Manage</a>
+                  <div class="flex-shrink-0">
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'my_bookings' %}">Manage</a>
+                  </div>
                 </div>
               </li>
             {% endfor %}
           </ul>
         {% else %}
-          <p class="text-muted mb-0">No upcoming bookings yet.</p>
+          <p class="text-muted mb-0">No upcoming bookings yet. <a href="{% url 'activities:list' %}">Browse activities</a>.</p>
         {% endif %}
       </div>
     </div>
@@ -47,52 +66,58 @@
 
   <!-- Buddy sessions -->
   <div class="col-12 col-lg-6">
-    <div class="card h-100">
+    <div class="card h-100 shadow-sm">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h2 class="h5 mb-0">Buddy sessions</h2>
           <a class="btn btn-sm btn-outline-secondary" href="{% url 'buddies:list' %}">Browse</a>
         </div>
 
+        <!-- Hosting -->
         <div class="mb-3">
           <div class="small text-uppercase text-muted mb-1">Hosting</div>
           {% if hosting %}
             <ul class="list-group list-group-flush">
               {% for s in hosting %}
-                <li class="list-group-item px-0 d-flex justify-content-between">
-                  <div>
-                    <a class="fw-semibold" href="{% url 'buddies:detail' s.id %}">{{ s.title }}</a>
-                    {% if session_dt_field %}
-                      <div class="text-muted small">{{ s|attr:session_dt_field|date:"D, M j H:i" }}</div>
-                    {% endif %}
+                <li class="list-group-item px-0">
+                  <div class="d-flex align-items-start justify-content-between gap-3">
+                    <div class="me-2">
+                      <a class="fw-semibold text-decoration-none" href="{% url 'buddies:detail' s.id %}">{{ s.title }}</a>
+                      <div class="text-muted small">{{ s.start_dt|date:"D, M j H:i" }}</div>
+                    </div>
+                    <div class="flex-shrink-0">
+                      <a class="btn btn-sm btn-outline-primary" href="{% url 'buddies:detail' s.id %}">Open</a>
+                    </div>
                   </div>
-                  <a class="btn btn-sm btn-outline-primary" href="{% url 'buddies:detail' s.id %}">Open</a>
                 </li>
               {% endfor %}
             </ul>
           {% else %}
-            <p class="text-muted mb-0">No upcoming sessions you host.</p>
+            <p class="text-muted mb-0">You’re not hosting any upcoming sessions.</p>
           {% endif %}
         </div>
 
+        <!-- Joined -->
         <div>
           <div class="small text-uppercase text-muted mb-1">Joined</div>
           {% if joined %}
             <ul class="list-group list-group-flush">
               {% for s in joined %}
-                <li class="list-group-item px-0 d-flex justify-content-between">
-                  <div>
-                    <a class="fw-semibold" href="{% url 'buddies:detail' s.id %}">{{ s.title }}</a>
-                    {% if session_dt_field %}
-                      <div class="text-muted small">{{ s|attr:session_dt_field|date:"D, M j H:i" }}</div>
-                    {% endif %}
+                <li class="list-group-item px-0">
+                  <div class="d-flex align-items-start justify-content-between gap-3">
+                    <div class="me-2">
+                      <a class="fw-semibold text-decoration-none" href="{% url 'buddies:detail' s.id %}">{{ s.title }}</a>
+                      <div class="text-muted small">{{ s.start_dt|date:"D, M j H:i" }}</div>
+                    </div>
+                    <div class="flex-shrink-0">
+                      <a class="btn btn-sm btn-outline-primary" href="{% url 'buddies:detail' s.id %}">Open</a>
+                    </div>
                   </div>
-                  <a class="btn btn-sm btn-outline-primary" href="{% url 'buddies:detail' s.id %}">Open</a>
                 </li>
               {% endfor %}
             </ul>
           {% else %}
-            <p class="text-muted mb-0">No upcoming sessions you joined.</p>
+            <p class="text-muted mb-0">No upcoming sessions you’ve joined.</p>
           {% endif %}
         </div>
       </div>
@@ -101,26 +126,27 @@
 
   <!-- Recent messages -->
   <div class="col-12">
-    <div class="card">
+    <div class="card shadow-sm">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h2 class="h5 mb-0">Recent buddy messages</h2>
           <a class="btn btn-sm btn-outline-secondary" href="{% url 'buddies:list' %}">See sessions</a>
         </div>
+
         {% if messages %}
           <ul class="list-group list-group-flush">
             {% for m in messages %}
               <li class="list-group-item px-0">
                 <div class="d-flex flex-wrap justify-content-between gap-2">
-                  <div>
+                  <div class="me-2">
                     <div class="small text-muted">
                       {{ m.user.get_full_name|default:m.user.username }} in
-                      <a href="{% url 'buddies:detail' m.session.id %}">{{ m.session.title }}</a>
+                      <a class="text-decoration-none" href="{% url 'buddies:detail' m.session.id %}">{{ m.session.title }}</a>
                     </div>
-                    <div>{{ m.body|truncatechars:140 }}</div>
+                    <div>{{ m.body|truncatechars:160 }}</div>
                   </div>
-                  <div class="text-muted small">
-                    {% if msg_time_field %}{{ m|attr:msg_time_field|naturaltime }}{% endif %}
+                  <div class="text-muted small flex-shrink-0">
+                    {{ m.created_at|naturaltime }}
                   </div>
                 </div>
               </li>
@@ -133,4 +159,5 @@
     </div>
   </div>
 </div>
+
 {% endblock %}

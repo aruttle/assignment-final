@@ -1,33 +1,69 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Buddy sessions — SEA{% endblock %}
+
 {% block content %}
-<h1 class="mb-3">Buddy sessions</h1>
 
-<div class="d-flex gap-2 mb-3">
-  <a class="btn btn-primary" href="{% url 'buddies:create' %}">Create session</a>
+<!-- Hero -->
+<section class="hero hero-buddies mb-4 rounded-3 overflow-hidden"
+         style="background-image:url('{% static "images/buddies-hero.jpg" %}');">
+  <div class="hero-overlay">
+    <div class="container py-5 ps-4 ps-lg-5">
+      <div class="col-lg-9 text-white">
+        <h1 class="display-6 fw-bold mb-2">Buddy sessions</h1>
+        <p class="lead mb-4">
+          {{ sessions|length }} open sessions around the Shannon Estuary.
+        </p>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-outline-light" data-bs-toggle="collapse" href="#filters" role="button" aria-expanded="false" aria-controls="filters">
+            Filter sessions
+          </a>
+          <a class="btn btn-brand" href="{% url 'buddies:create' %}">Create session</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Quick type chips -->
+<div class="container mb-3">
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{% url 'buddies:list' %}"
+       class="btn btn-sm {% if not selected_type %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+      All
+    </a>
+    {% for val,label in type_choices %}
+      <a href="{% url 'buddies:list' %}?type={{ val|urlencode }}{% if q %}&q={{ q|urlencode }}{% endif %}"
+         class="btn btn-sm {% if selected_type == val %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+        {{ label }}
+      </a>
+    {% endfor %}
+  </div>
 </div>
 
-<form class="row gy-2 gx-2 align-items-end mb-3"
-      hx-get="{% url 'buddies:list' %}" hx-target="#sessions" hx-push-url="true">
-  <div class="col-auto">
-    <label class="form-label">Type</label>
-    <select name="type" class="form-select" onchange="this.form.requestSubmit()">
-      <option value="">All</option>
-      {% for val,label in type_choices %}
-        <option value="{{ val }}" {% if selected_type == val %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
+<!-- Filters (collapsed) -->
+<div class="container">
+  <div class="collapse" id="filters">
+    <div class="card card-body mb-3">
+      <form class="row gy-2 gx-3 align-items-end"
+            hx-get="{% url 'buddies:list' %}" hx-target="#sessions" hx-push-url="true">
+        <!-- Keep the chosen type when searching -->
+        <input type="hidden" name="type" value="{{ selected_type }}">
+        <div class="col-12 col-md-6">
+          <label class="form-label">Search</label>
+          <input type="text" class="form-control" name="q" value="{{ q }}" placeholder="title or location"
+                 oninput="this.form.requestSubmit()">
+        </div>
+      </form>
+    </div>
   </div>
-  <div class="col-auto">
-    <label class="form-label">Search</label>
-    <input type="text" class="form-control" name="q" value="{{ q }}" placeholder="title or location"
-           oninput="this.form.requestSubmit()">
-  </div>
-</form>
-
-<div id="sessions">
-  {% include "buddies/partials/_list.html" %}
 </div>
+
+<!-- Results -->
+<div class="container">
+  <div id="sessions">
+    {% include "buddies/partials/_list.html" %}
+  </div>
+</div>
+
 {% endblock %}
-
-

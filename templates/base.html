@@ -91,20 +91,36 @@
 <script src="{% static 'js/distance-chips.js' %}?v=1"></script>
 
 <footer class="footer-sea mt-auto border-top bg-white" role="contentinfo">
-  <div class="container py-4 small d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
-    <div>
-      <strong>SEA — Shannon Estuary Activities</strong><br>
-      <span class="text-muted">Plan, book, and buddy up—safely.</span>
+  <div class="container py-4">
+    <div class="row gy-3 align-items-center">
+      <div class="col-md-6">
+        <div class="d-flex align-items-center gap-2">
+          <img src="{% static 'images/logo-sea-green.png' %}" alt="SEA" style="height:24px" class="brand-logo--invert">
+          <div class="small">
+            <strong>SEA — Shannon Estuary Activities</strong><br>
+            <span class="text-muted">Plan, book, and buddy up—safely.</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <ul class="nav justify-content-md-end small">
+          <li class="nav-item"><a class="nav-link px-2 text-muted" href="{% url 'activities:list' %}">Activities</a></li>
+          <li class="nav-item"><a class="nav-link px-2 text-muted" href="{% url 'buddies:list' %}">Buddies</a></li>
+          <li class="nav-item"><a class="nav-link px-2 text-muted" href="{% url 'core:home' %}#map">Map</a></li>
+          <li class="nav-item">
+            <a class="nav-link px-2 text-muted" href="#" aria-label="Back to top"
+               onclick="window.scrollTo({top:0,behavior:'smooth'})">Top ↑</a>
+          </li>
+        </ul>
+      </div>
     </div>
-    <ul class="list-unstyled d-flex flex-wrap gap-3 mb-0">
-      <li><a class="link-secondary" href="{% url 'activities:list' %}">Activities</a></li>
-      <li><a class="link-secondary" href="{% url 'buddies:list' %}">Buddies</a></li>
-      <li><a class="link-secondary" href="#map">Map</a></li>
-      <li><a class="link-secondary" href="#" aria-label="Back to top"
-             onclick="window.scrollTo({top:0,behavior:'smooth'})">Top ↑</a></li>
-    </ul>
+
+    <div class="border-top mt-3 pt-3 text-center text-muted small">
+      © {% now "Y" %} SEA. All rights reserved.
+    </div>
   </div>
 </footer>
+
 
 </body>
 </html>

@@ -135,5 +135,31 @@ body{ color: var(--sea-ink); }
   background: #e9ecef;
   box-shadow: 0 .125rem .25rem rgba(0,0,0,.08);
 }
+
+/* Buddies hero styling */
+.hero-buddies{
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  min-height: 320px;
+}
+.hero-buddies .hero-overlay{
+  background: linear-gradient(90deg, rgba(0,0,0,.60) 0%, rgba(0,0,0,.38) 55%, rgba(0,0,0,.18) 100%);
+}
+
+/* Dashboard */
+.page-header{
+  background: linear-gradient(180deg, rgba(46,125,50,.06) 0%, rgba(46,125,50,.02) 100%);
+  border: 1px solid rgba(0,0,0,.05);
+}
+
+.card-list .list-group-item { padding: .75rem 0; }
+.card-list .list-group-item + .list-group-item { border-top: 1px solid rgba(0,0,0,.06); }
+
+
 @media (min-width: 992px){ .map-thumb{ height: 180px; } }
 .map-thumb .leaflet-container{ background:#e9ecef; }
+
+@media (min-height: 700px){
+  main .card { margin-top: 1rem; }
+}

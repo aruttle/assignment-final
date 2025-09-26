@@ -1,39 +1,55 @@
+# buddies/views.py
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q, Count
+from django.http import HttpResponseForbidden, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
-from django.db.models import Q
-from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from django.http import HttpResponseForbidden, HttpResponse  
-from django.contrib import messages 
-from .models import BuddySession, BuddyParticipant, BuddyMessage, SESSION_TYPES
+
 from .forms import BuddySessionForm
-from django.db.models import Q, Count
+from .models import BuddySession, BuddyParticipant, BuddyMessage, SESSION_TYPES
 
 
 @login_required
 def session_list(request):
-    qs = BuddySession.objects.filter(
-        start_dt__gte=timezone.now(), status="open"
-    ).order_by("start_dt")
+    """
+    Buddies landing page: show only upcoming & open sessions.
+    Optional filters:
+      - ?type=<code> via chips
+      - ?q=<free text>  (matches title/location)
+    """
+    qs = (
+        BuddySession.objects
+        .filter(start_dt__gte=timezone.now(), status="open")
+        .order_by("start_dt")
+    )
 
-    t = request.GET.get("type") or ""
-    q = request.GET.get("q") or ""
+    t = (request.GET.get("type") or "").strip()
+    q = (request.GET.get("q") or "").strip()
 
     allowed_types = {code for code, _ in SESSION_TYPES}
     if t in allowed_types:
         qs = qs.filter(type=t)
+
     if q:
-        qs = qs.filter(Q(title__icontains=q) | Q(location_name__icontains=q))
+        qs = qs.filter(
+            Q(title__icontains=q) |
+            Q(location_name__icontains=q)
+        )
 
     ctx = {
         "sessions": qs,
+        "open_count": qs.count(),   # handy for hero line
         "selected_type": t,
         "q": q,
         "type_choices": SESSION_TYPES,
     }
 
+    # If this is an HTMX fragment update, return just the list partial
     if getattr(request, "htmx", False):
         return render(request, "buddies/partials/_list.html", ctx)
+
     return render(request, "buddies/list.html", ctx)
 
 
@@ -83,7 +99,11 @@ def toggle_join(request, pk):
 
     sess.refresh_from_db()
     joined = sess.is_joined(request.user)
-    return render(request, "buddies/partials/_join_box.html", {"sess": sess, "joined": joined})
+    return render(
+        request,
+        "buddies/partials/_join_box.html",
+        {"sess": sess, "joined": joined},
+    )
 
 
 @require_POST
@@ -133,6 +153,7 @@ def session_delete(request, pk):
         return redirect("buddies:list")
     return redirect("buddies:detail", pk=sess.id)
 
+
 @require_POST
 @login_required
 def delete_message(request, msg_id):
@@ -140,7 +161,8 @@ def delete_message(request, msg_id):
     can_delete = (
         msg.user_id == request.user.id
         or request.user.id == getattr(msg.session, "creator_id", None)
-        or request.user.is_staff or request.user.is_superuser
+        or request.user.is_staff
+        or request.user.is_superuser
     )
     if not can_delete:
         return HttpResponseForbidden("Not allowed")
@@ -149,13 +171,17 @@ def delete_message(request, msg_id):
     # HTMX: remove the <li> by returning nothing and swapping outerHTML
     return HttpResponse("")
 
+
 @login_required
 def my_sessions(request):
+    """
+    Upcoming sessions the user hosts OR has joined.
+    """
     now = timezone.now()
     sessions = (
         BuddySession.objects
         .filter(
-            Q(creator=request.user) | Q(participants=request.user),  # ← fix here
+            Q(creator=request.user) | Q(participants=request.user),
             start_dt__gte=now,
         )
         .select_related("creator")
