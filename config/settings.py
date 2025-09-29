@@ -1,10 +1,12 @@
 """
 SEA — Shannon Estuary Activities
-Django settings (Django 5) with HTMX, WhiteNoise, env config, and simple caching.
+Django settings (Django 5) with HTMX, WhiteNoise, env config, optional Cloudinary media,
+and simple caching.
 """
 
 from pathlib import Path
 import os
+import sys
 import environ
 from urllib.parse import urlparse
 
@@ -24,7 +26,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 # Core toggles
 DEBUG = env.bool("DEBUG", True)
-SECRET_KEY = env("SECRET_KEY", default="dev-secret-key")  
+SECRET_KEY = env("SECRET_KEY", default="dev-secret-key")
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
@@ -34,7 +36,7 @@ RENDER_EXTERNAL_URL = env("RENDER_EXTERNAL_URL", default="")
 if RENDER_EXTERNAL_URL:
     try:
         o = urlparse(RENDER_EXTERNAL_URL)
-        host = (o.netloc or o.path).split(",")[0].strip()  
+        host = (o.netloc or o.path).split(",")[0].strip()
         if host and host not in ALLOWED_HOSTS:
             ALLOWED_HOSTS.append(host)
         # Prefer provided scheme; default to https if missing
@@ -42,9 +44,7 @@ if RENDER_EXTERNAL_URL:
         if origin not in CSRF_TRUSTED_ORIGINS:
             CSRF_TRUSTED_ORIGINS.append(origin)
     except Exception:
-        # Keep running even if parsing fails
         pass
-
 
 # External API keys (optional)
 STORMGLASS_API_KEY = env("STORMGLASS_API_KEY", default="")
@@ -64,6 +64,10 @@ INSTALLED_APPS = [
 
     # Third-party
     "django_htmx",
+
+    # Optional media hosting (Cloudinary)
+    "cloudinary_storage",
+    "cloudinary",
 
     # Local apps
     "core",
@@ -116,7 +120,6 @@ TEMPLATES = [
 DATABASES = {
     "default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
 }
-# Keep DB connections open briefly for performance
 DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", 60)
 
 # Enforce SSL for Postgres in production (Render usually adds ?sslmode=require)
@@ -125,8 +128,6 @@ if not DEBUG and DATABASES["default"]["ENGINE"].endswith("postgresql"):
     DATABASES["default"]["OPTIONS"].setdefault("sslmode", "require")
 
 # --- Test DB override: use SQLite for tests to avoid Postgres CREATEDB perms ---
-import sys
-
 RUNNING_TESTS = any(arg in sys.argv for arg in ("test", "pytest"))
 if RUNNING_TESTS and env.bool("TEST_USE_SQLITE", True):
     DATABASES = {
@@ -135,28 +136,19 @@ if RUNNING_TESTS and env.bool("TEST_USE_SQLITE", True):
             "NAME": ":memory:",
         }
     }
-    # No persistent connections for SQLite test DB
     DATABASES["default"]["CONN_MAX_AGE"] = 0
 
 # -----------------------------------------------------------------------------
 # Caches (used for tide/weather response caching)
 # -----------------------------------------------------------------------------
-CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "sea-cache"}
+CACHES = {
+    "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "sea-cache"}
 }
 # Optional project-level TTL constants (seconds)
 TIDES_CACHE_TIMEOUT = env.int("TIDES_CACHE_TIMEOUT", default=60 * 60)       # 1 hour
 WEATHER_CACHE_TIMEOUT = env.int("WEATHER_CACHE_TIMEOUT", default=15 * 60)   # 15 min
 TIDE_TIME_OFFSET_MINUTES = env.int("TIDE_TIME_OFFSET_MINUTES", default=0)      # e.g. +15
 TIDE_HEIGHT_OFFSET_METERS = env.float("TIDE_HEIGHT_OFFSET_METERS", default=0.0) # e.g. -0.10
-# -----------------------------------------------------------------------------
-# Password validation
-# -----------------------------------------------------------------------------
-AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
-]
 
 # -----------------------------------------------------------------------------
 # Internationalization
@@ -167,24 +159,37 @@ USE_I18N = True
 USE_TZ = True
 
 # -----------------------------------------------------------------------------
-# Static & Media (WhiteNoise)
+# Static & Media
 # -----------------------------------------------------------------------------
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
+# Toggle Cloudinary media in production (or when explicitly enabled)
+USE_CLOUDINARY = env.bool("USE_CLOUDINARY", default=not DEBUG)
+CLOUDINARY_URL = env("CLOUDINARY_URL", default="")
+
 STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
+    # Static files served by WhiteNoise
     "staticfiles": {"BACKEND": "whitenoise.storage.StaticFilesStorage"},
 }
 
+if USE_CLOUDINARY and CLOUDINARY_URL:
+    # Store uploaded media on Cloudinary
+    STORAGES["default"] = {"BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage"}
+    # Optional: force https delivery
+    CLOUDINARY_STORAGE = {"SECURE": True}
+    MEDIA_URL = "/media/"  # not used by Cloudinary but harmless to keep
+    MEDIA_ROOT = ""        # unused when Cloudinary handles media
+else:
+    # Local filesystem media (dev)
+    STORAGES["default"] = {"BACKEND": "django.core.files.storage.FileSystemStorage"}
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = BASE_DIR / "media"
+
+# WhiteNoise cache during dev
 if DEBUG:
     os.environ.setdefault("WHITENOISE_MAX_AGE", "0")
-
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -198,15 +203,10 @@ LOGIN_URL = "/accounts/login/"
 # -----------------------------------------------------------------------------
 # Email
 # -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-# Email
-# -----------------------------------------------------------------------------
-# Prefer env var even in DEBUG so we can test SMTP locally
 EMAIL_BACKEND = env(
     "EMAIL_BACKEND",
     default="django.core.mail.backends.console.EmailBackend",
 )
-
 if EMAIL_BACKEND.endswith("smtp.EmailBackend"):
     EMAIL_HOST = env("EMAIL_HOST", default="")
     EMAIL_PORT = env.int("EMAIL_PORT", default=587)
@@ -215,10 +215,8 @@ if EMAIL_BACKEND.endswith("smtp.EmailBackend"):
     EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
     EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
     EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=15)
-# else: console backend, no extra config
 
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@sea.local")
-
 
 # -----------------------------------------------------------------------------
 # Security for production
