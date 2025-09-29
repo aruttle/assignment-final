@@ -8,4 +8,4 @@ urlpatterns = [
     path("<int:pk>/availability/", views.activity_availability, name="availability"),
     path("<int:pk>/book/", views.booking_create, name="book"),
     path("bookings/<int:pk>/cancel/", views.booking_cancel, name="booking_cancel"),  
-]
+] 

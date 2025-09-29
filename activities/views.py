@@ -1,4 +1,3 @@
-# activities/views.py
 from __future__ import annotations
 
 from datetime import datetime, date as date_cls, time as dtime
@@ -17,7 +16,8 @@ from .models import Activity, Provider, Booking
 # Activities: list + detail
 # ---------------------------
 def activity_list(request):
-    qs = Activity.objects.select_related("provider").order_by("title")
+    # Include provider (and spot if present) for efficient templates
+    qs = Activity.objects.select_related("provider", "spot").order_by("title")
     providers = Provider.objects.order_by("name")
 
     provider_id = request.GET.get("provider") or ""
@@ -29,7 +29,8 @@ def activity_list(request):
         qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
 
     ctx = {
-        "activities": qs,
+        "activities": qs,            # your templates use this
+        "object_list": qs,           # some partials expect object_list
         "providers": providers,
         "selected_provider": provider_id,
         "q": q,
@@ -41,7 +42,10 @@ def activity_list(request):
 
 
 def activity_detail(request, pk: int):
-    activity = get_object_or_404(Activity.objects.select_related("provider"), pk=pk)
+    activity = get_object_or_404(
+        Activity.objects.select_related("provider", "spot"),
+        pk=pk
+    )
     today = timezone.localdate()
     return render(request, "activities/detail.html", {"activity": activity, "today": today})
 

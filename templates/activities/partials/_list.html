@@ -1,23 +1,30 @@
-{% if activities %}
-  <div class="row row-cols-1 row-cols-md-2 g-3">
-    {% for a in activities %}
-      <div class="col">
-        <div class="card h-100">
-          <div class="card-body">
-            <h5 class="card-title mb-1">
-              <a href="{% url 'activities:detail' a.id %}">{{ a.title }}</a>
-            </h5>
-            <div class="text-muted small mb-2">{{ a.provider.name }}</div>
-            <p class="card-text">{{ a.description|truncatechars:140 }}</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <span>€{{ a.price }} · {{ a.duration_minutes }}m</span>
-              <a class="btn btn-sm btn-primary" href="{% url 'activities:detail' a.id %}">View</a>
-            </div>
+{% with items=activities|default:object_list %}
+<div class="row g-3">
+  {% for a in items %}
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card h-100 activity-card shadow-sm">
+        {% if a.image %}
+          <div class="activity-card-img" style="background-image: url('{{ a.image.url }}');"></div>
+        {% else %}
+          <div class="activity-card-img activity-card-img--placeholder"></div>
+        {% endif %}
+        <div class="card-body">
+          <div class="small text-muted">{{ a.provider.name }}</div>
+          <h3 class="h6 mb-1">
+            <a href="{% url 'activities:detail' a.id %}">{{ a.title }}</a>
+          </h3>
+          {% if a.spot %}<div class="small text-muted">{{ a.spot.name }}</div>{% endif %}
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <div class="fw-semibold">€{{ a.price }}</div>
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'activities:detail' a.id %}">View</a>
           </div>
         </div>
       </div>
-    {% endfor %}
-  </div>
-{% else %}
-  <div class="alert alert-secondary mb-0">No activities found.</div>
-{% endif %}
+    </div>
+  {% empty %}
+    <div class="col-12">
+      <p class="text-muted mb-0">No activities match your filters.</p>
+    </div>
+  {% endfor %}
+</div>
+{% endwith %}

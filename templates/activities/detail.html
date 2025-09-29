@@ -1,41 +1,88 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}{{ activity.title }} — SEA{% endblock %}
 
 {% block content %}
-<h1 class="mb-1">{{ activity.title }}</h1>
-<div class="text-muted mb-3">
-  {{ activity.provider.name }} • {{ activity.description|default:"" }}
-</div>
 
-<div class="mb-3">
-  <strong>{{ activity.price|floatformat:2 }}€</strong>
-  <span class="text-muted">• {{ activity.duration_mins }} minutes • Capacity {{ activity.capacity }}</span>
-</div>
-
-<div class="alert alert-info">Pick a date to see available times.</div>
-
-<form id="availability-form"
-      hx-get="{% url 'activities:availability' activity.id %}"
-      hx-target="#slot-area"
-      hx-include="#id_date"
-      hx-trigger="load, change from:#id_date">
-  <div class="row g-2 align-items-end">
-    <div class="col-sm-4">
-      <label for="id_date" class="form-label">Date</label>
-      <input type="text"
-             id="id_date"
-             name="date"
-             class="form-control js-date"
-             value="{{ today|date:'Y-m-d' }}"
-             autocomplete="off">
+<!-- Hero: background from uploaded activity.image, else fallback -->
+<section class="hero mb-4 rounded-3 overflow-hidden"
+         style="background-image:url('{% if activity.image %}{{ activity.image.url }}{% else %}{% static "images/activities-hero.jpg" %}{% endif %}');">
+  <div class="hero-overlay">
+    <div class="container py-5">
+      <div class="col-lg-9 text-white">
+        <div class="small mb-1 opacity-75">{{ activity.provider.name }}</div>
+        <h1 class="display-6 fw-semibold mb-2">{{ activity.title }}</h1>
+        {% if activity.description %}
+          <p class="lead mb-0">{{ activity.description }}</p>
+        {% endif %}
+      </div>
     </div>
   </div>
-</form>
+</section>
 
-<div id="slot-area" class="mt-3"></div>
-<div id="booking-panel" class="mt-3"></div>
+<!-- Details -->
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="d-flex flex-wrap gap-3 align-items-center mb-2">
+          <div class="fs-5 fw-semibold">€{{ activity.price|floatformat:2 }}</div>
+          <div class="text-muted">
+            • {{ activity.duration_minutes }} minutes
+            • Capacity {{ activity.capacity }}
+            {% if activity.spot %} • {{ activity.spot.name }}{% endif %}
+          </div>
+        </div>
 
-<p class="mt-4">
-  <a class="btn btn-outline-secondary" href="{% url 'activities:list' %}">Back to list</a>
-</p>
+        <div class="alert alert-info mb-3">Pick a date to see available times.</div>
+
+        <!-- Availability form (unchanged behavior) -->
+        <form id="availability-form"
+              hx-get="{% url 'activities:availability' activity.id %}"
+              hx-target="#slot-area"
+              hx-include="#id_date"
+              hx-trigger="load, change from:#id_date">
+          <div class="row g-2 align-items-end">
+            <div class="col-sm-6 col-md-5 col-lg-4">
+              <label for="id_date" class="form-label">Date</label>
+              <input type="text"
+                     id="id_date"
+                     name="date"
+                     class="form-control js-date"
+                     value="{{ today|date:'Y-m-d' }}"
+                     autocomplete="off"
+                     placeholder="Select a date">
+            </div>
+          </div>
+        </form>
+
+        <div id="slot-area" class="mt-3" aria-live="polite"></div>
+        <div id="booking-panel" class="mt-3"></div>
+
+        <div class="mt-4">
+          <a class="btn btn-outline-secondary" href="{% url 'activities:list' %}">Back to activities</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Side card: quick facts -->
+  <div class="col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="h6 text-uppercase text-muted mb-3">At a glance</h2>
+        <ul class="list-unstyled mb-0">
+          <li class="mb-2"><strong>Provider:</strong> {{ activity.provider.name }}</li>
+          <li class="mb-2"><strong>Duration:</strong> {{ activity.duration_minutes }} minutes</li>
+          <li class="mb-2"><strong>Capacity:</strong> {{ activity.capacity }}</li>
+          {% if activity.spot %}
+            <li class="mb-2"><strong>Location:</strong> {{ activity.spot.name }}</li>
+          {% endif %}
+          <li><strong>Price:</strong> €{{ activity.price|floatformat:2 }}</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

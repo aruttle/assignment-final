@@ -156,6 +156,20 @@ body{ color: var(--sea-ink); }
 .card-list .list-group-item { padding: .75rem 0; }
 .card-list .list-group-item + .list-group-item { border-top: 1px solid rgba(0,0,0,.06); }
 
+/* Activity cards with cover image */
+.activity-card-img{
+  height: 160px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+@media (min-width: 768px){
+  .activity-card-img{ height: 200px; }
+}
+.activity-card-img--placeholder{
+  background: linear-gradient(180deg, #eef2f4 0%, #e6ebee 100%);
+}
+
 
 @media (min-width: 992px){ .map-thumb{ height: 180px; } }
 .map-thumb .leaflet-container{ background:#e9ecef; }

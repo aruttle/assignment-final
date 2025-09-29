@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.urls import path, include
 from activities import views as activities_views
 from accounts.views import me_dashboard
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -29,5 +31,5 @@ urlpatterns = [
     path("buddies/", include(("buddies.urls", "buddies"), namespace="buddies")),
     path("me/bookings/", activities_views.my_bookings, name="my_bookings"),
     path("me/", me_dashboard, name="me_dashboard"),
-]
+] + (static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) if settings.DEBUG else [])
 

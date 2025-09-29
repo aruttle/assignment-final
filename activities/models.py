@@ -12,19 +12,28 @@ class Provider(models.Model):
 
 
 class Activity(models.Model):
-    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name="activities")
+    provider = models.ForeignKey(
+        Provider, on_delete=models.CASCADE, related_name="activities"
+    )
     title = models.CharField(max_length=160)
     description = models.TextField(blank=True, default="")
     price = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     duration_minutes = models.PositiveIntegerField(default=60)
     capacity = models.PositiveIntegerField(default=8)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # NEW: optional cover image for cards/headers
+    image = models.ImageField(
+        upload_to="activities/covers/", blank=True, null=True
+    )
+
     spot = models.ForeignKey(
         "core.Spot",
-        null=True, blank=True,
+        null=True,
+        blank=True,
         on_delete=models.SET_NULL,
         related_name="activities",
-        help_text="Where this activity happens."
+        help_text="Where this activity happens.",
     )
 
     class Meta:
@@ -32,6 +41,17 @@ class Activity(models.Model):
 
     def __str__(self):
         return f"{self.title} — {self.provider.name}"
+
+    @property
+    def cover_image_url(self) -> str:
+        """
+        Safe helper for templates. Returns the uploaded image URL if present,
+        otherwise an empty string so you can cleanly fall back in the template.
+        """
+        try:
+            return self.image.url  # type: ignore[attr-defined]
+        except Exception:
+            return ""
 
 
 STATUS_CHOICES = [
@@ -41,11 +61,17 @@ STATUS_CHOICES = [
 
 
 class Booking(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="bookings")
-    activity = models.ForeignKey(Activity, on_delete=models.CASCADE, related_name="bookings")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="bookings"
+    )
+    activity = models.ForeignKey(
+        Activity, on_delete=models.CASCADE, related_name="bookings"
+    )
     start_dt = models.DateTimeField()
     party_size = models.PositiveIntegerField(default=1)
-    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default="confirmed")
+    status = models.CharField(
+        max_length=12, choices=STATUS_CHOICES, default="confirmed"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
