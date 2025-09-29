@@ -4,12 +4,16 @@ from datetime import datetime, date as date_cls, time as dtime
 from dateutil import parser as dtparser
 
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator, EmptyPage
 from django.db.models import Q, Sum
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
 
 from .models import Activity, Provider, Booking
+
+
+PAGE_SIZE_ACTIVITIES = 9  
 
 
 # ---------------------------
@@ -21,23 +25,40 @@ def activity_list(request):
     providers = Provider.objects.order_by("name")
 
     provider_id = request.GET.get("provider") or ""
-    q = request.GET.get("q") or ""
+    q = (request.GET.get("q") or "").strip()
 
     if provider_id.isdigit():
         qs = qs.filter(provider_id=provider_id)
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
 
+    # Pagination
+    page = request.GET.get("page", "1")
+    paginator = Paginator(qs, PAGE_SIZE_ACTIVITIES)
+    try:
+        page_obj = paginator.page(page)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
     ctx = {
-        "activities": qs,            # your templates use this
-        "object_list": qs,           # some partials expect object_list
+        # current page items
+        "activities": page_obj.object_list,
+        "object_list": page_obj.object_list,  # some partials expect this alias
+
+        # filters (keep these for next-page links)
         "providers": providers,
         "selected_provider": provider_id,
         "q": q,
+
+        # pagination object
+        "page_obj": page_obj,
     }
 
-    if getattr(request, "htmx", False):
+    # HTMX returns just the chunk (items + next trigger)
+    if request.headers.get("HX-Request"):
         return render(request, "activities/partials/_list.html", ctx)
+
+    # Full page
     return render(request, "activities/list.html", ctx)
 
 
@@ -227,7 +248,7 @@ def booking_cancel(request, pk: int):
 
     if request.method == "POST":
         booking.delete()
-        if getattr(request, "htmx", False):
+        if request.headers.get("HX-Request"):
             return HttpResponse("")  # removes the row
         return redirect("my_bookings")
 

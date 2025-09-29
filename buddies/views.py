@@ -1,6 +1,6 @@
-# buddies/views.py
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator, EmptyPage
 from django.db.models import Q, Count
 from django.http import HttpResponseForbidden, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
@@ -9,6 +9,8 @@ from django.views.decorators.http import require_POST
 
 from .forms import BuddySessionForm
 from .models import BuddySession, BuddyParticipant, BuddyMessage, SESSION_TYPES
+
+PAGE_SIZE_SESSIONS = 6  
 
 
 @login_required
@@ -22,6 +24,7 @@ def session_list(request):
     qs = (
         BuddySession.objects
         .filter(start_dt__gte=timezone.now(), status="open")
+        .annotate(joined_count=Count("participants", distinct=True))
         .order_by("start_dt")
     )
 
@@ -31,23 +34,28 @@ def session_list(request):
     allowed_types = {code for code, _ in SESSION_TYPES}
     if t in allowed_types:
         qs = qs.filter(type=t)
-
     if q:
-        qs = qs.filter(
-            Q(title__icontains=q) |
-            Q(location_name__icontains=q)
-        )
+        qs = qs.filter(Q(title__icontains=q) | Q(location_name__icontains=q))
+
+    # Pagination
+    page = request.GET.get("page", "1")
+    paginator = Paginator(qs, PAGE_SIZE_SESSIONS)
+    try:
+        page_obj = paginator.page(page)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
 
     ctx = {
-        "sessions": qs,
-        "open_count": qs.count(),   # handy for hero line
+        "sessions": page_obj.object_list,
+        "page_obj": page_obj,
+        "open_count": paginator.count,
         "selected_type": t,
         "q": q,
         "type_choices": SESSION_TYPES,
     }
 
-    # If this is an HTMX fragment update, return just the list partial
-    if getattr(request, "htmx", False):
+    # HTMX fragment 
+    if request.headers.get("HX-Request"):
         return render(request, "buddies/partials/_list.html", ctx)
 
     return render(request, "buddies/list.html", ctx)
@@ -168,7 +176,6 @@ def delete_message(request, msg_id):
         return HttpResponseForbidden("Not allowed")
 
     msg.delete()
-    # HTMX: remove the <li> by returning nothing and swapping outerHTML
     return HttpResponse("")
 
 
@@ -180,10 +187,7 @@ def my_sessions(request):
     now = timezone.now()
     sessions = (
         BuddySession.objects
-        .filter(
-            Q(creator=request.user) | Q(participants=request.user),
-            start_dt__gte=now,
-        )
+        .filter(Q(creator=request.user) | Q(participants=request.user), start_dt__gte=now)
         .select_related("creator")
         .annotate(joined_count=Count("participants", distinct=True))
         .order_by("start_dt")
