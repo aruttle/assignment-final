@@ -1,50 +1,71 @@
-{% for s in sessions %}
-  <div class="card mb-3">
-    <div class="card-body">
-      <div class="row g-3 align-items-center">
-        <div class="col-12 col-lg">
-          <h5 class="mb-1">
-            <a href="{% url 'buddies:detail' s.id %}">{{ s.title }}</a>
-          </h5>
-          <div class="mb-2 d-flex flex-wrap gap-2 align-items-center">
-            <span class="badge rounded-pill text-bg-primary">
-              {{ s.get_type_display|default:s.type|default:"Session" }}
-            </span>
-            {% if s.distance_km %}
-              <span class="badge rounded-pill text-bg-light">{{ s.distance_km|floatformat:0 }} km away</span>
-            {% endif %}
-          </div>
+{# templates/buddies/partials/_list.html #}
+<div class="row">
+  <div class="col-12">
+    {% for s in sessions %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+          <div class="row g-3 align-items-center">
+            <!-- Text / details -->
+            <div class="col-12 col-lg">
+              <h5 class="mb-1">
+                <a href="{% url 'buddies:detail' s.id %}">{{ s.title }}</a>
+              </h5>
 
-          <div class="text-muted small mb-1">{{ s.start_dt|date:"D, M j H:i" }}</div>
-          <div class="text-muted small mb-2">
-            {% if s.location_name %}Location: {{ s.location_name }}{% else %}Lat {{ s.lat }}, Lon {{ s.lon }}{% endif %}
-          </div>
+              <div class="mb-2 d-flex flex-wrap gap-2 align-items-center">
+                <span class="badge rounded-pill text-bg-primary">
+                  {{ s.get_type_display|default:s.type|default:"Session" }}
+                </span>
 
-          {% if s.capacity and s.joined_count is not None %}
-            <div class="small mb-2">
-              Capacity: {{ s.joined_count }} / {{ s.capacity }}
-              {% with left=s.capacity|add:"-s.joined_count" %}
-                {% if left > 0 %} ({{ left }} left){% endif %}
-              {% endwith %}
+                {# Distance chip for client-side JS (and server fallback text) #}
+                {% if s.lat and s.lon %}
+                  <span
+                    class="badge rounded-pill text-bg-light distance-chip"
+                    data-lat="{{ s.lat }}"
+                    data-lon="{{ s.lon }}"
+                    {% if not s.distance_km %}hidden{% endif %}
+                  >
+                    {% if s.distance_km %}{{ s.distance_km|floatformat:1 }} km away{% endif %}
+                  </span>
+                {% endif %}
+
+                {% if s.capacity and s.joined_count is not None %}
+                  <span class="badge rounded-pill text-bg-light">
+                    {{ s.joined_count }}/{{ s.capacity }} joined
+                  </span>
+                {% endif %}
+              </div>
+
+              <div class="text-muted small mb-1">
+                {{ s.start_dt|date:"D, M j H:i" }}
+              </div>
+
+              <div class="text-muted small mb-2">
+                {% if s.location_name %}
+                  Location: {{ s.location_name }}
+                {% else %}
+                  Location: Lat {{ s.lat }}, Lon {{ s.lon }}
+                {% endif %}
+              </div>
+
+              <a class="btn btn-outline-primary btn-sm" href="{% url 'buddies:detail' s.id %}">Open</a>
             </div>
-          {% endif %}
 
-          <a class="btn btn-outline-primary btn-sm" href="{% url 'buddies:detail' s.id %}">Open</a>
-        </div>
-
-        <div class="col-12 col-lg-4 order-lg-2">
-          <div class="map-thumb w-100"
-               data-lat="{{ s.lat }}"
-               data-lon="{{ s.lon }}"
-               data-zoom="13"
-               aria-label="Map preview of {{ s.title }}"></div>
+            <!-- Map thumb on the right -->
+            <div class="col-12 col-lg-4 order-lg-2">
+              <div class="map-thumb w-100"
+                   data-lat="{{ s.lat }}"
+                   data-lon="{{ s.lon }}"
+                   data-zoom="13"
+                   aria-label="Map preview of {{ s.title }}"></div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    {% empty %}
+      <p class="text-muted">No sessions found.</p>
+    {% endfor %}
   </div>
-{% empty %}
-  <p class="text-muted">No sessions found.</p>
-{% endfor %}
+</div>
 
 {% if page_obj and page_obj.has_next %}
   <div

@@ -1,4 +1,6 @@
-# buddies/views.py
+from __future__ import annotations
+
+from math import radians, sin, cos, asin, sqrt
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -12,18 +14,32 @@ from .forms import BuddySessionForm
 from .models import BuddySession, BuddyParticipant, BuddyMessage, SESSION_TYPES
 
 
+# ---------- helpers ----------
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Great-circle distance between two WGS84 points in KM."""
+    R = 6371.0
+    lat1, lon1, lat2, lon2 = map(radians, (lat1, lon1, lat2, lon2))
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+    return 2 * R * asin(sqrt(a))
+
+
 @login_required
 def session_list(request):
     """
     Buddies landing page: show only upcoming & open sessions.
     Optional filters:
-      - ?type=<code> via chips
-      - ?q=<free text> (matches title/location)
-    Supports infinite scroll via HTMX (?page=N).
+      - ?type=<code>
+      - ?q=<free text>
+      - ?lat=<float>&lon=<float> (to show 'X km away')
+    Infinite scroll supported via HTMX.
     """
     qs = (
         BuddySession.objects
         .filter(start_dt__gte=timezone.now(), status="open")
+        .select_related("creator")
+        .annotate(joined_count=Count("participants", distinct=True))
         .order_by("start_dt")
     )
 
@@ -31,29 +47,48 @@ def session_list(request):
     q = (request.GET.get("q") or "").strip()
     page_num = request.GET.get("page") or "1"
 
+    # Filters
     allowed_types = {code for code, _ in SESSION_TYPES}
     if t in allowed_types:
         qs = qs.filter(type=t)
-
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(location_name__icontains=q))
 
-    paginator = Paginator(qs.select_related("creator"), 6)  # 6 sessions per chunk
+    # Pagination
+    paginator = Paginator(qs, 8)  # 8 sessions per chunk
     page_obj = paginator.get_page(page_num)
+    items = list(page_obj.object_list)
+
+    # Distance: from ?lat & ?lon (if provided)
+    user_lat = user_lon = None
+    try:
+        user_lat = float(request.GET.get("lat")) if request.GET.get("lat") else None
+        user_lon = float(request.GET.get("lon")) if request.GET.get("lon") else None
+    except (TypeError, ValueError):
+        user_lat = user_lon = None
+
+    if user_lat is not None and user_lon is not None:
+        for s in items:
+            try:
+                if s.lat is not None and s.lon is not None:
+                    s.distance_km = round(_haversine_km(user_lat, user_lon, float(s.lat), float(s.lon)), 1)
+            except Exception:
+                s.distance_km = None
 
     ctx = {
-        "sessions": page_obj.object_list,
+        "sessions": items,
         "page_obj": page_obj,
         "paginator": paginator,
         "open_count": paginator.count,
         "selected_type": t,
         "q": q,
         "type_choices": SESSION_TYPES,
+        "user_lat": user_lat,
+        "user_lon": user_lon,
     }
 
     if request.headers.get("HX-Request"):
         return render(request, "buddies/partials/_list.html", ctx)
-
     return render(request, "buddies/list.html", ctx)
 
 
@@ -103,11 +138,7 @@ def toggle_join(request, pk):
 
     sess.refresh_from_db()
     joined = sess.is_joined(request.user)
-    return render(
-        request,
-        "buddies/partials/_join_box.html",
-        {"sess": sess, "joined": joined},
-    )
+    return render(request, "buddies/partials/_join_box.html", {"sess": sess, "joined": joined})
 
 
 @require_POST
@@ -165,8 +196,7 @@ def delete_message(request, msg_id):
     can_delete = (
         msg.user_id == request.user.id
         or request.user.id == getattr(msg.session, "creator_id", None)
-        or request.user.is_staff
-        or request.user.is_superuser
+        or request.user.is_staff or request.user.is_superuser
     )
     if not can_delete:
         return HttpResponseForbidden("Not allowed")
