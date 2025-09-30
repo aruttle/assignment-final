@@ -177,3 +177,41 @@ body{ color: var(--sea-ink); }
 @media (min-height: 700px){
   main .card { margin-top: 1rem; }
 }
+
+/* HERO: center the focal point by default; on wide screens bias slightly upward */
+.hero{
+  background-position: center center !important; /* was center top */
+  background-size: cover !important;
+}
+@media (min-width: 992px){
+  .hero{
+    /* show a bit more sky/water on larger viewports without cutting heads */
+    background-position: 50% 30% !important;
+  }
+}
+
+/* Keep hero text comfortably away from the right edge */
+.hero .hero-overlay .container{
+  padding-inline-end: clamp(1rem, 6vw, 4rem);
+}
+
+/* ACTIVITY CARDS: enforce centered crop & consistent cover */
+.activity-card-img{
+  background-position: center center !important;
+  background-size: cover !important;
+  /* keep your existing fixed heights; just ensure rounded top corners match the card */
+  border-top-left-radius: .5rem;
+  border-top-right-radius: .5rem;
+  overflow: hidden;
+}
+
+/* Optional: slightly taller card image on very wide screens for a nicer grid */
+@media (min-width: 1200px){
+  .activity-card-img{ height: 220px; }
+}
+
+/* Make sure hero placeholders (like .hero-buddies) also center */
+.hero-buddies{
+  background-position: center center !important;
+  background-size: cover !important;
+}
