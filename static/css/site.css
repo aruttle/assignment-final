@@ -190,7 +190,7 @@ body{ color: var(--sea-ink); }
   }
 }
 
-/* Keep hero text comfortably away from the right edge */
+/* Keep hero text away from the right edge */
 .hero .hero-overlay .container{
   padding-inline-end: clamp(1rem, 6vw, 4rem);
 }
@@ -199,18 +199,17 @@ body{ color: var(--sea-ink); }
 .activity-card-img{
   background-position: center center !important;
   background-size: cover !important;
-  /* keep your existing fixed heights; just ensure rounded top corners match the card */
   border-top-left-radius: .5rem;
   border-top-right-radius: .5rem;
   overflow: hidden;
 }
 
-/* Optional: slightly taller card image on very wide screens for a nicer grid */
+/* Taller card image on very wide screens for a nicer grid */
 @media (min-width: 1200px){
   .activity-card-img{ height: 220px; }
 }
 
-/* Make sure hero placeholders (like .hero-buddies) also center */
+/* Make sure hero placeholders also center */
 .hero-buddies{
   background-position: center center !important;
   background-size: cover !important;
