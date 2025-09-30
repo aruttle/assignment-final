@@ -4,7 +4,6 @@
 
 {% block content %}
 
-<!-- Hero -->
 <section class="hero hero-buddies mb-4 rounded-3 overflow-hidden"
          style="background-image:url('{% static "images/buddies-hero.jpg" %}');">
   <div class="hero-overlay">
@@ -12,7 +11,7 @@
       <div class="col-lg-9 text-white">
         <h1 class="display-6 fw-bold mb-2">Buddy sessions</h1>
         <p class="lead mb-4">
-          {{ sessions|length }} open sessions around the Shannon Estuary.
+          {{ paginator.count }} open sessions around the Shannon Estuary.
         </p>
         <div class="d-flex flex-wrap gap-2">
           <a class="btn btn-outline-light" data-bs-toggle="collapse" href="#filters" role="button" aria-expanded="false" aria-controls="filters">
@@ -25,7 +24,15 @@
   </div>
 </section>
 
-<!-- Quick type chips -->
+<div class="container px-0 mb-2">
+  <button type="button"
+          class="btn btn-sm btn-outline-secondary distance-cta"
+          hidden
+          onclick="window.SEA_requestLocation()">
+    Enable location
+  </button>
+</div>
+
 <div class="container mb-3">
   <div class="d-flex flex-wrap gap-2">
     <a href="{% url 'buddies:list' %}"
@@ -41,13 +48,11 @@
   </div>
 </div>
 
-<!-- Filters (collapsed) -->
 <div class="container">
   <div class="collapse" id="filters">
     <div class="card card-body mb-3">
       <form class="row gy-2 gx-3 align-items-end"
             hx-get="{% url 'buddies:list' %}" hx-target="#sessions" hx-push-url="true">
-        <!-- Keep the chosen type when searching -->
         <input type="hidden" name="type" value="{{ selected_type }}">
         <div class="col-12 col-md-6">
           <label class="form-label">Search</label>
@@ -59,7 +64,6 @@
   </div>
 </div>
 
-<!-- Results -->
 <div class="container">
   <div id="sessions">
     {% include "buddies/partials/_list.html" %}

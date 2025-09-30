@@ -4,7 +4,6 @@
 
 {% block content %}
 
-{# Hero (reuses your .hero + .hero-buddies overlay styles) #}
 <section class="hero hero-buddies mb-4 rounded-3 overflow-hidden"
          style="background-image: url('{% static "images/activities-hero.jpg" %}');">
   <div class="hero-overlay">
@@ -12,7 +11,7 @@
       <div class="col-12 col-lg-9 text-white pe-lg-5">
         <h1 class="display-6 fw-bold mb-2">Activities</h1>
         <p class="lead mb-3">
-          {{ activities|length }} activities across the Shannon Estuary. Book a guide or join a session.
+          {{ paginator.count }} activities across the Shannon Estuary. Book a guide or join a session.
         </p>
         <div class="d-flex flex-wrap gap-2">
           <a class="btn btn-outline-light btn-sm" href="#filters">Filter activities</a>
@@ -22,7 +21,15 @@
   </div>
 </section>
 
-{# Filters #}
+<div class="container px-0 mb-2">
+  <button type="button"
+          class="btn btn-sm btn-outline-secondary distance-cta"
+          hidden
+          onclick="window.SEA_requestLocation()">
+    Enable location
+  </button>
+</div>
+
 <form id="filters"
       class="row gy-2 gx-2 align-items-end mb-3"
       hx-get="{% url 'activities:list' %}"
