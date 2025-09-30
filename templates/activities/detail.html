@@ -26,38 +26,56 @@
     <div class="card shadow-sm">
       <div class="card-body">
         <div class="d-flex flex-wrap gap-3 align-items-center mb-2">
-          <div class="fs-5 fw-semibold">€{{ activity.price|floatformat:2 }}</div>
+          <div class="fs-5 fw-semibold">
+            {% if activity.price == 0 %}
+              Free
+            {% else %}
+              €{{ activity.price|floatformat:2 }}
+            {% endif %}
+          </div>
           <div class="text-muted">
             • {{ activity.duration_minutes }} minutes
             • Capacity {{ activity.capacity }}
             {% if activity.spot %} • {{ activity.spot.name }}{% endif %}
           </div>
+          {% if activity.requires_booking %}
+            <span class="badge text-bg-primary">Booking required</span>
+          {% else %}
+            <span class="badge text-bg-success">Drop-in / no booking</span>
+          {% endif %}
         </div>
 
-        <div class="alert alert-info mb-3">Pick a date to see available times.</div>
+        {% if activity.requires_booking %}
+          <div class="alert alert-info mb-3">Pick a date to see available times.</div>
 
-        <!-- Availability form (unchanged behavior) -->
-        <form id="availability-form"
-              hx-get="{% url 'activities:availability' activity.id %}"
-              hx-target="#slot-area"
-              hx-include="#id_date"
-              hx-trigger="load, change from:#id_date">
-          <div class="row g-2 align-items-end">
-            <div class="col-sm-6 col-md-5 col-lg-4">
-              <label for="id_date" class="form-label">Date</label>
-              <input type="text"
-                     id="id_date"
-                     name="date"
-                     class="form-control js-date"
-                     value="{{ today|date:'Y-m-d' }}"
-                     autocomplete="off"
-                     placeholder="Select a date">
+          <!-- Availability form -->
+          <form id="availability-form"
+                hx-get="{% url 'activities:availability' activity.id %}"
+                hx-target="#slot-area"
+                hx-include="#id_date"
+                hx-trigger="load, change from:#id_date">
+            <div class="row g-2 align-items-end">
+              <div class="col-sm-6 col-md-5 col-lg-4">
+                <label for="id_date" class="form-label">Date</label>
+                <input type="text"
+                       id="id_date"
+                       name="date"
+                       class="form-control js-date"
+                       value="{{ today|date:'Y-m-d' }}"
+                       autocomplete="off"
+                       placeholder="Select a date">
+              </div>
             </div>
-          </div>
-        </form>
+          </form>
 
-        <div id="slot-area" class="mt-3" aria-live="polite"></div>
-        <div id="booking-panel" class="mt-3"></div>
+          <div id="slot-area" class="mt-3" aria-live="polite"></div>
+          <div id="booking-panel" class="mt-3"></div>
+        {% else %}
+          <div class="alert alert-success mb-0">
+            No booking is required for this activity — just turn up at the scheduled time/location.
+            {% if activity.spot %} <span class="ms-1">Location: <strong>{{ activity.spot.name }}</strong>.</span>{% endif %}
+          </div>
+        {% endif %}
 
         <div class="mt-4">
           <a class="btn btn-outline-secondary" href="{% url 'activities:list' %}">Back to activities</a>
@@ -78,7 +96,14 @@
           {% if activity.spot %}
             <li class="mb-2"><strong>Location:</strong> {{ activity.spot.name }}</li>
           {% endif %}
-          <li><strong>Price:</strong> €{{ activity.price|floatformat:2 }}</li>
+          <li class="mb-2">
+            <strong>Price:</strong>
+            {% if activity.price == 0 %}Free{% else %}€{{ activity.price|floatformat:2 }}{% endif %}
+          </li>
+          <li>
+            <strong>Booking:</strong>
+            {% if activity.requires_booking %}Required{% else %}Not required (drop-in){% endif %}
+          </li>
         </ul>
       </div>
     </div>

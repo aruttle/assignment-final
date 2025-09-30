@@ -125,6 +125,15 @@ def _available_slots(activity: Activity, the_date: date_cls, user=None) -> list[
 # ---------------------------
 def activity_availability(request, pk: int):
     activity = get_object_or_404(Activity.objects.select_related("provider"), pk=pk)
+
+    # If this activity is drop-in, don’t show slots; return a tiny informative fragment.
+    if not activity.requires_booking:
+        return render(
+            request,
+            "activities/partials/_slots.html",
+            {"activity": activity, "date": None, "slots": [], "no_booking": True},
+        )
+
     date_str = request.GET.get("date", "")
     try:
         the_date = dtparser.parse(date_str).date()
@@ -139,6 +148,14 @@ def activity_availability(request, pk: int):
 @login_required
 def booking_create(request, pk: int):
     activity = get_object_or_404(Activity, pk=pk)
+
+    # Block booking if not required
+    if not activity.requires_booking:
+        return render(
+            request,
+            "activities/partials/_booking_panel.html",
+            {"activity": activity, "error": "This activity is drop-in — no booking required."},
+        )
 
     start_iso = request.POST.get("start_dt", "")
     party_size_raw = request.POST.get("party_size", "1")

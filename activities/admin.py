@@ -16,13 +16,17 @@ class ActivityAdmin(admin.ModelAdmin):
         "title",
         "provider",
         "price",
+        "requires_booking",
         "capacity",
         "spot",
         "image_preview",  # small thumbnail in list
     )
-    list_filter = ("provider", "spot")
+    list_filter = ("provider", "requires_booking", "spot")
     search_fields = ("title", "description", "provider__name", "spot__name")
     list_select_related = ("provider", "spot")
+    list_per_page = 25
+    save_on_top = True
+    ordering = ("title",)
 
     # Show image upload + read-only preview on the edit page
     readonly_fields = ("created_at", "image_preview")
@@ -30,12 +34,13 @@ class ActivityAdmin(admin.ModelAdmin):
         "title",
         "provider",
         "spot",
-        "price",
-        "duration_minutes",
-        "capacity",
         "description",
         "image",
         "image_preview",
+        "price",
+        "requires_booking",
+        "duration_minutes",
+        "capacity",
         "created_at",
     )
 

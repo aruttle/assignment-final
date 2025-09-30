@@ -22,9 +22,13 @@ class Activity(models.Model):
     capacity = models.PositiveIntegerField(default=8)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # NEW: optional cover image for cards/headers
-    image = models.ImageField(
-        upload_to="activities/covers/", blank=True, null=True
+    # Optional cover image for cards/headers
+    image = models.ImageField(upload_to="activities/covers/", blank=True, null=True)
+
+    # NEW: allow activities that don’t need booking (e.g. free drop-in)
+    requires_booking = models.BooleanField(
+        default=True,
+        help_text="If off, no slots/booking are shown; page is informational only.",
     )
 
     spot = models.ForeignKey(
@@ -44,14 +48,17 @@ class Activity(models.Model):
 
     @property
     def cover_image_url(self) -> str:
-        """
-        Safe helper for templates. Returns the uploaded image URL if present,
-        otherwise an empty string so you can cleanly fall back in the template.
-        """
         try:
             return self.image.url  # type: ignore[attr-defined]
         except Exception:
             return ""
+
+    @property
+    def is_free(self) -> bool:
+        try:
+            return float(self.price) == 0
+        except Exception:
+            return False
 
 
 STATUS_CHOICES = [
@@ -78,7 +85,6 @@ class Booking(models.Model):
         indexes = [
             models.Index(fields=["start_dt"]),
         ]
-        # One booking per user per activity+time while it's confirmed
         constraints = [
             models.UniqueConstraint(
                 fields=["user", "activity", "start_dt"],

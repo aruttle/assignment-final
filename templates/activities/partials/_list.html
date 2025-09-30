@@ -8,14 +8,29 @@
         {% else %}
           <div class="activity-card-img activity-card-img--placeholder"></div>
         {% endif %}
+
         <div class="card-body">
-          <div class="small text-muted">{{ a.provider.name }}</div>
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="small text-muted">{{ a.provider.name }}</div>
+            {% if a.requires_booking %}
+              <span class="badge text-bg-primary">Book</span>
+            {% else %}
+              <span class="badge text-bg-success">Drop-in</span>
+            {% endif %}
+          </div>
+
           <h3 class="h6 mb-1">
             <a href="{% url 'activities:detail' a.id %}">{{ a.title }}</a>
           </h3>
-          {% if a.spot %}<div class="small text-muted">{{ a.spot.name }}</div>{% endif %}
+
+          {% if a.spot %}
+            <div class="small text-muted">{{ a.spot.name }}</div>
+          {% endif %}
+
           <div class="d-flex justify-content-between align-items-center mt-2">
-            <div class="fw-semibold">€{{ a.price }}</div>
+            <div class="fw-semibold">
+              {% if a.price == 0 %}Free{% else %}€{{ a.price|floatformat:2 }}{% endif %}
+            </div>
             <a class="btn btn-sm btn-outline-primary" href="{% url 'activities:detail' a.id %}">View</a>
           </div>
         </div>
