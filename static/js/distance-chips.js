@@ -1,4 +1,3 @@
-// static/js/distance-chips.js
 (function () {
   // Haversine distance in km
   function distanceKm(lat1, lon1, lat2, lon2) {
@@ -26,7 +25,7 @@
     });
   }
 
-  // Expose a manual request function (used by the “Enable location” button)
+  // Expose a manual request function 
   window.SEA_requestLocation = function () {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
@@ -64,13 +63,13 @@
   }
 
   function requestPositionMaybe() {
-    // If we already have a location (from earlier), reuse it
+    
     const cached = window.__SEA_USER_POS__;
     if (cached) {
       setDistances(cached);
       return;
     }
-    // Otherwise, request in the background (Chrome may not prompt without a user gesture)
+    
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
       pos => {
