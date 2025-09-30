@@ -1,3 +1,4 @@
+// static/js/distance-chips.js
 (function () {
   // Haversine distance in km
   function distanceKm(lat1, lon1, lat2, lon2) {
@@ -12,88 +13,80 @@
     return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
   }
 
-  function showCTA() {
-    document.querySelectorAll(".distance-cta").forEach(btn => { btn.hidden = false; });
-  }
-  function hideCTA() {
-    document.querySelectorAll(".distance-cta").forEach(btn => { btn.hidden = true; });
-  }
-
   function setDistances(pos) {
-    if (!pos || !pos.coords) return;
     const myLat = pos.coords.latitude;
     const myLon = pos.coords.longitude;
     document.querySelectorAll(".distance-chip").forEach(chip => {
       const lat = parseFloat(chip.dataset.lat);
       const lon = parseFloat(chip.dataset.lon);
-      if (Number.isNaN(lat) || Number.isNaN(lon)) return;
+      if (isNaN(lat) || isNaN(lon)) return;
       const km = distanceKm(myLat, myLon, lat, lon);
       chip.textContent = `${km.toFixed(km >= 10 ? 0 : 1)} km away`;
       chip.hidden = false;
     });
   }
 
-  function requestPosition(fromUserGesture = false) {
+  // Expose a manual request function (used by the “Enable location” button)
+  window.SEA_requestLocation = function () {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
       pos => {
-        window.__SEA_USER_POS__ = pos; // cache for HTMX swaps
-        hideCTA();
+        window.__SEA_USER_POS__ = pos;
         setDistances(pos);
       },
       err => {
-        // If user explicitly denies, keep CTA visible for instructions
-        if (err && err.code === 1 /* PERMISSION_DENIED */) {
-          showCTA();
-        } else {
-          // For timeouts / unavailable, leave chips hidden but show CTA if called by user
-          if (fromUserGesture) showCTA();
-        }
+        // Helpful hint so folks know what to do in Chrome
+        alert(
+          "Location is blocked. In Chrome, click the lock icon → Site settings → Location → Allow, then reload."
+        );
       },
+      { enableHighAccuracy: false, maximumAge: 5 * 60_000, timeout: 8000 }
+    );
+  };
+
+  function showCTAIfNeeded() {
+    const cta = document.querySelector(".distance-cta");
+    if (!cta || !("geolocation" in navigator)) return;
+
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions
+        .query({ name: "geolocation" })
+        .then(status => {
+          if (status.state === "prompt" || status.state === "denied") {
+            cta.hidden = false;
+          }
+        })
+        .catch(() => { /* ignore */ });
+    } else {
+      // Older browsers: show the CTA
+      cta.hidden = false;
+    }
+  }
+
+  function requestPositionMaybe() {
+    // If we already have a location (from earlier), reuse it
+    const cached = window.__SEA_USER_POS__;
+    if (cached) {
+      setDistances(cached);
+      return;
+    }
+    // Otherwise, request in the background (Chrome may not prompt without a user gesture)
+    if (!("geolocation" in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        window.__SEA_USER_POS__ = pos;
+        setDistances(pos);
+      },
+      () => { /* stay quiet; CTA will be there if needed */ },
       { enableHighAccuracy: false, maximumAge: 5 * 60_000, timeout: 8000 }
     );
   }
 
-  // Expose a click handler for “Enable location” buttons
-  window.SEA_requestLocation = function () {
-    requestPosition(true);
-  };
-
-  async function ensurePermissionAndMaybeRequest() {
-    if (!("permissions" in navigator) || !navigator.permissions.query) {
-      // Older browsers: just ask
-      requestPosition(false);
-      return;
-    }
-    try {
-      const status = await navigator.permissions.query({ name: "geolocation" });
-      if (status.state === "granted") {
-        hideCTA();
-        requestPosition(false);
-      } else if (status.state === "prompt") {
-        // Might be blocked unless triggered by user gesture, so show the CTA
-        showCTA();
-      } else {
-        // denied
-        showCTA();
-      }
-    } catch {
-      // If permissions API throws, fall back
-      requestPosition(false);
-    }
+  function init() {
+    requestPositionMaybe();
+    showCTAIfNeeded();
   }
 
-  function scanAndApply() {
-    const cached = window.__SEA_USER_POS__;
-    if (cached) {
-      hideCTA();
-      setDistances(cached);
-    } else {
-      ensurePermissionAndMaybeRequest();
-    }
-  }
-
-  document.addEventListener("DOMContentLoaded", scanAndApply);
-  document.body.addEventListener("htmx:afterSettle", scanAndApply);
-  document.body.addEventListener("htmx:afterSwap", scanAndApply);
+  document.addEventListener("DOMContentLoaded", init);
+  document.body.addEventListener("htmx:afterSettle", init);
 })();
