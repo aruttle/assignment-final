@@ -1,56 +1,42 @@
-{# activities/partials/_list.html
-   Renders ONE "page chunk": cards for this page + an infinite-scroll trigger
-#}
-
 {% with items=activities|default:object_list %}
-<div class="list-chunk">
-
-  <div class="row g-3">
-    {% if items %}
-      {% for a in items %}
-        <div class="col-12 col-md-6 col-lg-4">
-          <div class="card h-100 activity-card shadow-sm">
-            {% if a.image %}
-              <div class="activity-card-img" style="background-image: url('{{ a.image.url }}');"></div>
-            {% else %}
-              <div class="activity-card-img activity-card-img--placeholder"></div>
-            {% endif %}
-            <div class="card-body">
-              <div class="small text-muted">{{ a.provider.name }}</div>
-              <h3 class="h6 mb-1">
-                <a href="{% url 'activities:detail' a.id %}">{{ a.title }}</a>
-              </h3>
-              {% if a.spot %}<div class="small text-muted">{{ a.spot.name }}</div>{% endif %}
-              <div class="d-flex justify-content-between align-items-center mt-2">
-                <div class="fw-semibold">€{{ a.price }}</div>
-                <a class="btn btn-sm btn-outline-primary" href="{% url 'activities:detail' a.id %}">View</a>
-              </div>
-            </div>
+<div class="row g-3">
+  {% for a in items %}
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card h-100 activity-card shadow-sm">
+        {% if a.image %}
+          <div class="activity-card-img" style="background-image: url('{{ a.image.url }}');"></div>
+        {% else %}
+          <div class="activity-card-img activity-card-img--placeholder"></div>
+        {% endif %}
+        <div class="card-body">
+          <div class="small text-muted">{{ a.provider.name }}</div>
+          <h3 class="h6 mb-1">
+            <a href="{% url 'activities:detail' a.id %}">{{ a.title }}</a>
+          </h3>
+          {% if a.spot %}<div class="small text-muted">{{ a.spot.name }}</div>{% endif %}
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <div class="fw-semibold">€{{ a.price }}</div>
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'activities:detail' a.id %}">View</a>
           </div>
         </div>
-      {% endfor %}
-    {% else %}
-      {# Only show empty state on first page #}
-      {% if page_obj.number == 1 %}
-        <div class="col-12">
-          <p class="text-muted mb-0">No activities match your filters.</p>
-        </div>
-      {% endif %}
-    {% endif %}
-  </div>
-
-  {% if page_obj.has_next %}
-    {# Infinite scroll trigger: when revealed, load next page and replace this trigger with the next chunk #}
-    <div class="text-center my-3"
-         hx-get="{% url 'activities:list' %}?page={{ page_obj.next_page_number }}{% if selected_provider %}&provider={{ selected_provider }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
-         hx-trigger="revealed"
-         hx-swap="outerHTML"
-         aria-label="Load more activities">
-      <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
-      <span class="ms-2 text-muted small">Loading…</span>
+      </div>
     </div>
-  {% endif %}
-
+  {% empty %}
+    <div class="col-12">
+      <p class="text-muted mb-0">No activities match your filters.</p>
+    </div>
+  {% endfor %}
 </div>
 {% endwith %}
 
+{% if page_obj and page_obj.has_next %}
+  <div
+    hx-get="{% url 'activities:list' %}?page={{ page_obj.next_page_number }}{% if selected_provider %}&provider={{ selected_provider }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
+    hx-trigger="revealed"
+    hx-swap="outerHTML"
+    class="py-3 text-center text-muted"
+    aria-label="Load more activities"
+  >
+    Loading more…
+  </div>
+{% endif %}

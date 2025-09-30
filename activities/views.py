@@ -4,16 +4,13 @@ from datetime import datetime, date as date_cls, time as dtime
 from dateutil import parser as dtparser
 
 from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator, EmptyPage
+from django.core.paginator import Paginator
 from django.db.models import Q, Sum
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
 
 from .models import Activity, Provider, Booking
-
-
-PAGE_SIZE_ACTIVITIES = 9  
 
 
 # ---------------------------
@@ -25,40 +22,31 @@ def activity_list(request):
     providers = Provider.objects.order_by("name")
 
     provider_id = request.GET.get("provider") or ""
-    q = (request.GET.get("q") or "").strip()
+    q = request.GET.get("q") or ""
+    page_num = request.GET.get("page") or "1"
 
     if provider_id.isdigit():
         qs = qs.filter(provider_id=provider_id)
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
 
-    # Pagination
-    page = request.GET.get("page", "1")
-    paginator = Paginator(qs, PAGE_SIZE_ACTIVITIES)
-    try:
-        page_obj = paginator.page(page)
-    except EmptyPage:
-        page_obj = paginator.page(paginator.num_pages)
+    paginator = Paginator(qs, 9)  # 9 activity cards per chunk
+    page_obj = paginator.get_page(page_num)
 
     ctx = {
-        # current page items
         "activities": page_obj.object_list,
-        "object_list": page_obj.object_list,  # some partials expect this alias
-
-        # filters (keep these for next-page links)
+        "object_list": page_obj.object_list,  # some templates refer to object_list
+        "page_obj": page_obj,
+        "paginator": paginator,
         "providers": providers,
         "selected_provider": provider_id,
         "q": q,
-
-        # pagination object
-        "page_obj": page_obj,
     }
 
-    # HTMX returns just the chunk (items + next trigger)
+    # HTMX requests receive just the next chunk
     if request.headers.get("HX-Request"):
         return render(request, "activities/partials/_list.html", ctx)
 
-    # Full page
     return render(request, "activities/list.html", ctx)
 
 

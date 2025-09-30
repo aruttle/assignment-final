@@ -1,6 +1,7 @@
+# buddies/views.py
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator, EmptyPage
+from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.http import HttpResponseForbidden, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
@@ -10,8 +11,6 @@ from django.views.decorators.http import require_POST
 from .forms import BuddySessionForm
 from .models import BuddySession, BuddyParticipant, BuddyMessage, SESSION_TYPES
 
-PAGE_SIZE_SESSIONS = 6  
-
 
 @login_required
 def session_list(request):
@@ -19,42 +18,39 @@ def session_list(request):
     Buddies landing page: show only upcoming & open sessions.
     Optional filters:
       - ?type=<code> via chips
-      - ?q=<free text>  (matches title/location)
+      - ?q=<free text> (matches title/location)
+    Supports infinite scroll via HTMX (?page=N).
     """
     qs = (
         BuddySession.objects
         .filter(start_dt__gte=timezone.now(), status="open")
-        .annotate(joined_count=Count("participants", distinct=True))
         .order_by("start_dt")
     )
 
     t = (request.GET.get("type") or "").strip()
     q = (request.GET.get("q") or "").strip()
+    page_num = request.GET.get("page") or "1"
 
     allowed_types = {code for code, _ in SESSION_TYPES}
     if t in allowed_types:
         qs = qs.filter(type=t)
+
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(location_name__icontains=q))
 
-    # Pagination
-    page = request.GET.get("page", "1")
-    paginator = Paginator(qs, PAGE_SIZE_SESSIONS)
-    try:
-        page_obj = paginator.page(page)
-    except EmptyPage:
-        page_obj = paginator.page(paginator.num_pages)
+    paginator = Paginator(qs.select_related("creator"), 6)  # 6 sessions per chunk
+    page_obj = paginator.get_page(page_num)
 
     ctx = {
         "sessions": page_obj.object_list,
         "page_obj": page_obj,
+        "paginator": paginator,
         "open_count": paginator.count,
         "selected_type": t,
         "q": q,
         "type_choices": SESSION_TYPES,
     }
 
-    # HTMX fragment 
     if request.headers.get("HX-Request"):
         return render(request, "buddies/partials/_list.html", ctx)
 
@@ -181,9 +177,6 @@ def delete_message(request, msg_id):
 
 @login_required
 def my_sessions(request):
-    """
-    Upcoming sessions the user hosts OR has joined.
-    """
     now = timezone.now()
     sessions = (
         BuddySession.objects
