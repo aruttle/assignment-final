@@ -22,10 +22,10 @@ class Activity(models.Model):
     capacity = models.PositiveIntegerField(default=8)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # Optional cover image for cards/headers
+    # Cover image for cards/headers
     image = models.ImageField(upload_to="activities/covers/", blank=True, null=True)
 
-    # NEW: allow activities that don’t need booking (e.g. free drop-in)
+    # Allow activities that don’t need booking 
     requires_booking = models.BooleanField(
         default=True,
         help_text="If off, no slots/booking are shown; page is informational only.",
@@ -49,7 +49,7 @@ class Activity(models.Model):
     @property
     def cover_image_url(self) -> str:
         try:
-            return self.image.url  # type: ignore[attr-defined]
+            return self.image.url  
         except Exception:
             return ""
 

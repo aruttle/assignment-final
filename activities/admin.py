@@ -28,7 +28,7 @@ class ActivityAdmin(admin.ModelAdmin):
     save_on_top = True
     ordering = ("title",)
 
-    # Show image upload + read-only preview on the edit page
+    # Show image upload and read-only preview on the edit page
     readonly_fields = ("created_at", "image_preview")
     fields = (
         "title",

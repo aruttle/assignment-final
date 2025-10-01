@@ -10,7 +10,7 @@ class BuddySessionForm(forms.ModelForm):
             "title": forms.TextInput(
                 attrs={"class": "form-control", "placeholder": "e.g., Early swim at Bunratty"}
             ),
-            # choices come from the model field; no need to pass SESSION_TYPES here
+            # choices come from the model field
             "type": forms.Select(attrs={"class": "form-select"}),
             # IMPORTANT: this class hooks flatpickr
             "start_dt": forms.TextInput(
@@ -28,7 +28,7 @@ class BuddySessionForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # belt-and-braces: ensure classes exist even if widgets change later
+        # Ensure classes exist 
         self.fields["title"].widget.attrs.setdefault("class", "form-control")
         self.fields["type"].widget.attrs.setdefault("class", "form-select")
         self.fields["start_dt"].widget.attrs.setdefault("class", "form-control")

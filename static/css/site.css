@@ -178,9 +178,9 @@ body{ color: var(--sea-ink); }
   main .card { margin-top: 1rem; }
 }
 
-/* HERO: center the focal point by default; on wide screens bias slightly upward */
+/* HERO: center the focal point by default; enforce cover */
 .hero{
-  background-position: center center !important; /* was center top */
+  background-position: center center !important; 
   background-size: cover !important;
 }
 @media (min-width: 992px){

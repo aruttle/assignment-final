@@ -89,7 +89,7 @@ def _get_stormglass_tides(lat: float, lon: float):
       [{"time": datetime, "type": "high"|"low", "height": float|None}, ...]
     Cached per (lat,lon,day). Empty list if unavailable.
     """
-    # If no key, get_tide_extremes() returns {"items": [], "error": "no-api-key"}
+    # If no key, get_tide_extremes() returns 
     day_key = timezone.now().strftime("%Y%m%d")
     cache_key = f"tide:{_round_key(lat)}:{_round_key(lon)}:{day_key}"
 
@@ -99,7 +99,7 @@ def _get_stormglass_tides(lat: float, lon: float):
 
     res = get_tide_extremes(lat, lon, hours=48)
     items = res.get("items", [])
-    # Soft-cache errors briefly so we don't hammer the API
+    # Soft-cache errors briefly 
     timeout = getattr(settings, "TIDES_CACHE_TIMEOUT", _cache_timeout(3600))
     cache.set(cache_key, items, timeout=timeout if not res.get("error") else 300)
     return items

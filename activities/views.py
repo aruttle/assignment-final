@@ -17,7 +17,7 @@ from .models import Activity, Provider, Booking
 # Activities: list + detail
 # ---------------------------
 def activity_list(request):
-    # Include provider (and spot if present) for efficient templates
+    # Include provider and spot if present
     qs = Activity.objects.select_related("provider", "spot").order_by("title")
     providers = Provider.objects.order_by("name")
 

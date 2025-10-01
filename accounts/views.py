@@ -82,7 +82,7 @@ def me_dashboard(request):
     else:
         hosting = BuddySession.objects.none()
 
-    # IMPORTANT: participants is an M2M to User → use participants=request.user
+    # Participants is an M2M to User 
     joined = BuddySession.objects.filter(participants=request.user).distinct()
     if owner_field:
         joined = joined.exclude(**{owner_field: request.user})

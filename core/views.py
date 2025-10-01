@@ -1,10 +1,8 @@
-# core/views.py
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 
 from .models import Spot
 
-# Try to include Activities so a spot popup can list activities at that location.
 try:
     from activities.models import Activity
     HAS_ACTIVITIES = True
