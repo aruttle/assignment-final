@@ -25,7 +25,7 @@ class Activity(models.Model):
     # Cover image for cards/headers
     image = models.ImageField(upload_to="activities/covers/", blank=True, null=True)
 
-    # Allow activities that don’t need booking 
+    # Allow activities that don’t need booking
     requires_booking = models.BooleanField(
         default=True,
         help_text="If off, no slots/booking are shown; page is informational only.",
@@ -59,6 +59,17 @@ class Activity(models.Model):
             return float(self.price) == 0
         except Exception:
             return False
+
+    # ---- RSVP helpers ----
+    def is_rsvped(self, user) -> bool:
+        u = getattr(user, "id", None)
+        if not u:
+            return False
+        return ActivityRSVP.objects.filter(activity=self, user_id=u).exists()
+
+    @property
+    def rsvp_count(self) -> int:
+        return getattr(self, "rsvps", ActivityRSVP.objects.filter(activity=self)).count()
 
 
 STATUS_CHOICES = [
@@ -95,3 +106,24 @@ class Booking(models.Model):
 
     def __str__(self):
         return f"{self.activity.title} @ {self.start_dt:%Y-%m-%d %H:%M} ({self.party_size})"
+
+
+class ActivityRSVP(models.Model):
+    """Lightweight 'Save/RSVP' for drop-in activities (or to bookmark any activity)."""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="activity_rsvps"
+    )
+    activity = models.ForeignKey(
+        Activity, on_delete=models.CASCADE, related_name="rsvps"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "activity"], name="uniq_rsvp_per_activity"
+            )
+        ]
+
+    def __str__(self):
+        return f"RSVP {self.user_id} → {self.activity_id}"

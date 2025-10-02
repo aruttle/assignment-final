@@ -10,14 +10,13 @@ from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
 
-from .models import Activity, Provider, Booking
+from .models import Activity, Provider, Booking, ActivityRSVP
 
 
 # ---------------------------
 # Activities: list + detail
 # ---------------------------
 def activity_list(request):
-    # Include provider and spot if present
     qs = Activity.objects.select_related("provider", "spot").order_by("title")
     providers = Provider.objects.order_by("name")
 
@@ -30,12 +29,12 @@ def activity_list(request):
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
 
-    paginator = Paginator(qs, 9)  # 9 activity cards per chunk
+    paginator = Paginator(qs, 9)
     page_obj = paginator.get_page(page_num)
 
     ctx = {
         "activities": page_obj.object_list,
-        "object_list": page_obj.object_list,  # some templates refer to object_list
+        "object_list": page_obj.object_list,
         "page_obj": page_obj,
         "paginator": paginator,
         "providers": providers,
@@ -43,7 +42,6 @@ def activity_list(request):
         "q": q,
     }
 
-    # HTMX requests receive just the next chunk
     if request.headers.get("HX-Request"):
         return render(request, "activities/partials/_list.html", ctx)
 
@@ -56,7 +54,14 @@ def activity_detail(request, pk: int):
         pk=pk
     )
     today = timezone.localdate()
-    return render(request, "activities/detail.html", {"activity": activity, "today": today})
+    # RSVP state for the current user
+    rsvped = activity.is_rsvped(request.user)
+    rsvp_count = activity.rsvp_count
+    return render(
+        request,
+        "activities/detail.html",
+        {"activity": activity, "today": today, "rsvped": rsvped, "rsvp_count": rsvp_count},
+    )
 
 
 # ---------------------------
@@ -82,7 +87,6 @@ def _available_slots(activity: Activity, the_date: date_cls, user=None) -> list[
     slots: list[dict] = []
     user_id = getattr(user, "id", None)
 
-    # Preload my confirmed bookings for that day to mark 'mine'
     my_slot_set = set()
     if user_id:
         day_start = _make_aware(datetime.combine(the_date, dtime(0, 0)))
@@ -126,7 +130,6 @@ def _available_slots(activity: Activity, the_date: date_cls, user=None) -> list[
 def activity_availability(request, pk: int):
     activity = get_object_or_404(Activity.objects.select_related("provider"), pk=pk)
 
-    # If this activity is drop-in, don’t show slots; return a tiny informative fragment.
     if not activity.requires_booking:
         return render(
             request,
@@ -149,7 +152,6 @@ def activity_availability(request, pk: int):
 def booking_create(request, pk: int):
     activity = get_object_or_404(Activity, pk=pk)
 
-    # Block booking if not required
     if not activity.requires_booking:
         return render(
             request,
@@ -160,7 +162,6 @@ def booking_create(request, pk: int):
     start_iso = request.POST.get("start_dt", "")
     party_size_raw = request.POST.get("party_size", "1")
 
-    # Parse start
     try:
         parsed = dtparser.isoparse(start_iso) if start_iso else None
         if not parsed:
@@ -173,7 +174,6 @@ def booking_create(request, pk: int):
             {"activity": activity, "error": "Invalid start time."},
         )
 
-    # party_size
     try:
         party_size = int(party_size_raw)
         if party_size < 1:
@@ -185,7 +185,6 @@ def booking_create(request, pk: int):
             {"activity": activity, "error": "Party size must be at least 1."},
         )
 
-    # Duplicate (same slot by same user) guard
     if Booking.objects.filter(
         user=request.user, activity=activity, start_dt=start_dt, status="confirmed"
     ).exists():
@@ -195,7 +194,6 @@ def booking_create(request, pk: int):
             {"activity": activity, "error": "You already have this time booked."},
         )
 
-    # Capacity check
     valid_slots = _available_slots(activity, start_dt.date(), user=request.user)
     matching = next((s for s in valid_slots if s["dt"] == start_dt), None)
     if not matching:
@@ -214,7 +212,6 @@ def booking_create(request, pk: int):
             },
         )
 
-    # Create booking
     booking = Booking.objects.create(
         user=request.user,
         activity=activity,
@@ -227,6 +224,36 @@ def booking_create(request, pk: int):
         "activities/partials/_booking_panel.html",
         {"activity": activity, "booking": booking},
     )
+
+
+# ---------------------------
+# RSVP toggle (Save/Unsave)
+# ---------------------------
+@login_required
+def rsvp_toggle(request, pk: int):
+    activity = get_object_or_404(Activity, pk=pk)
+
+    obj, created = ActivityRSVP.objects.get_or_create(
+        activity=activity, user=request.user
+    )
+    if not created:
+        obj.delete()
+        rsvped = False
+    else:
+        rsvped = True
+
+    if request.headers.get("HX-Request"):
+        # If the action came from the Dashboard list, remove the <li>
+        hx_target = request.headers.get("HX-Target", "")
+        if hx_target.startswith("saved-item-"):
+            return HttpResponse("")  # HTMX will remove the node via outerHTML swap
+
+        return render(
+            request,
+            "activities/partials/_rsvp_button.html",
+            {"activity": activity, "rsvped": rsvped, "rsvp_count": activity.rsvp_count},
+        )
+    return redirect("activities:detail", pk=pk)
 
 
 # ---------------------------
@@ -254,7 +281,7 @@ def booking_cancel(request, pk: int):
     if request.method == "POST":
         booking.delete()
         if request.headers.get("HX-Request"):
-            return HttpResponse("")  # removes the row
+            return HttpResponse("")
         return redirect("my_bookings")
 
     return redirect("my_bookings")

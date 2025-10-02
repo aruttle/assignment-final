@@ -11,7 +11,7 @@ from django.db.models import Q
 from .forms import SignUpForm, BootstrapAuthenticationForm
 
 # Feature models
-from activities.models import Booking
+from activities.models import Booking, ActivityRSVP
 from buddies.models import BuddySession, BuddyMessage
 
 
@@ -58,6 +58,7 @@ def me_dashboard(request):
       - Upcoming bookings (top 4)
       - Buddy sessions you host & joined (top 4 each)
       - Recent buddy messages (top 5)
+      - Saved activities (top 12)
     """
     now = timezone.now()
 
@@ -82,7 +83,6 @@ def me_dashboard(request):
     else:
         hosting = BuddySession.objects.none()
 
-    # Participants is an M2M to User 
     joined = BuddySession.objects.filter(participants=request.user).distinct()
     if owner_field:
         joined = joined.exclude(**{owner_field: request.user})
@@ -106,11 +106,20 @@ def me_dashboard(request):
     else:
         msgs = msgs.order_by("-id")[:5]
 
+    # --- Saved activities (RSVPs as bookmarks) ---
+    saved_items = (
+        ActivityRSVP.objects
+        .filter(user=request.user)
+        .select_related("activity", "activity__provider")
+        .order_by("-created_at")[:12]
+    )
+
     ctx = {
         "bookings": bookings,
         "hosting": hosting,
         "joined": joined,
         "messages": msgs,
+        "saved_items": saved_items,
         "booking_dt_field": booking_dt,
         "session_dt_field": session_dt,
         "msg_time_field": msg_time,

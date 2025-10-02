@@ -4,7 +4,7 @@
 
 {% block content %}
 
-<!-- Hero: background from uploaded activity.image, else fallback -->
+<!-- Hero -->
 <section class="hero mb-4 rounded-3 overflow-hidden"
          style="background-image:url('{% if activity.image %}{{ activity.image.url }}{% else %}{% static "images/activities-hero.jpg" %}{% endif %}');">
   <div class="hero-overlay">
@@ -35,7 +35,9 @@
           </div>
           <div class="text-muted">
             • {{ activity.duration_minutes }} minutes
-            • Capacity {{ activity.capacity }}
+            {% if activity.requires_booking %}
+              • Capacity {{ activity.capacity }}
+            {% endif %}
             {% if activity.spot %} • {{ activity.spot.name }}{% endif %}
           </div>
           {% if activity.requires_booking %}
@@ -71,9 +73,13 @@
           <div id="slot-area" class="mt-3" aria-live="polite"></div>
           <div id="booking-panel" class="mt-3"></div>
         {% else %}
-          <div class="alert alert-success mb-0">
-            No booking is required for this activity — just turn up at the scheduled time/location.
+          <div class="alert alert-success mb-3" role="status" aria-live="polite">
+            No booking is required — just turn up at the scheduled time/location.
             {% if activity.spot %} <span class="ms-1">Location: <strong>{{ activity.spot.name }}</strong>.</span>{% endif %}
+          </div>
+
+          <div id="rsvp-btn" class="mt-2">
+          {% include "activities/partials/_rsvp_button.html" with activity=activity rsvped=rsvped rsvp_count=rsvpd_count %}
           </div>
         {% endif %}
 
@@ -92,7 +98,9 @@
         <ul class="list-unstyled mb-0">
           <li class="mb-2"><strong>Provider:</strong> {{ activity.provider.name }}</li>
           <li class="mb-2"><strong>Duration:</strong> {{ activity.duration_minutes }} minutes</li>
-          <li class="mb-2"><strong>Capacity:</strong> {{ activity.capacity }}</li>
+          {% if activity.requires_booking %}
+            <li class="mb-2"><strong>Capacity:</strong> {{ activity.capacity }}</li>
+          {% endif %}
           {% if activity.spot %}
             <li class="mb-2"><strong>Location:</strong> {{ activity.spot.name }}</li>
           {% endif %}

@@ -3,7 +3,7 @@
 {% if error %}
   <div class="alert alert-danger mb-3">{{ error }}</div>
 {% elif booking %}
-  <div class="alert alert-success mb-3">Booking confirmed 🎉</div>
+  <div class="alert alert-success mb-3">Booking confirmed</div>
 
   <div class="fw-semibold">{{ activity.title }}</div>
   <div class="small text-muted mb-2">
@@ -15,6 +15,5 @@
     <a class="btn btn-sm btn-outline-secondary" href="{% url 'activities:detail' activity.id %}">Stay on page</a>
   </div>
 {% else %}
-  {# Fallback: nothing to show #}
   <div class="alert alert-light mb-0">Select a time to open the booking panel.</div>
 {% endif %}
